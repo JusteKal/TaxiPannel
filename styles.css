@@ -32,8 +32,8 @@ body::before {
 .logo {
   position: fixed;
   bottom: 20px;
-  left: 20px;
-  width: 120px;
+  left: 4%;
+  width: 200px;
   height: auto;
   z-index: 2;
 }
