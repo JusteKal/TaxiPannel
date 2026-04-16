@@ -14,12 +14,37 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: url(img/wallpaper.jpg) no-repeat center center fixed;
+  position: relative;
 }
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url(img/wallpaper.png) center/cover no-repeat;
+  filter: blur(8px);
+  z-index: -1;
+}
+
+.logo {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 120px;
+  height: auto;
+  z-index: 2;
+}
+
 .page-container {
-  width: min(1100px, 100%);
+  width: min(60vw, 100%);
+  height: min(40vh, 100%);
   display: grid;
   gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .upload-row {
@@ -55,11 +80,11 @@ body {
   display: none;
 }
 .dropzone:hover {
-  border-color: #7d99ff;
+  border-color: #be9114;
   background: rgba(125, 153, 255, 0.06);
 }
 .dropzone.dragover {
-  border-color: #7d99ff;
+  border-color: #be9114;
   background: rgba(125, 153, 255, 0.12);
 }
 .preview {
@@ -68,7 +93,7 @@ body {
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.08);
-  background: #0f141d;
+  background: rgba(255,255,255,0.08);
   display: grid;
   place-items: center;
 }
