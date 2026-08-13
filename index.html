@@ -10,40 +10,98 @@
 <body>
   <img src="img/logo.webp" alt="LS Taxi Logo" class="logo">
   <div class="page-container">
-    
+
+    <div class="left-column">
     <section class="upload-row">
       <div class="upload-card">
         <h2>Panneau droite</h2>
         <label class="dropzone" for="input-x" id="dropzone-x">
-          <span>Déposez l'image ici</span>
-          <input type="file" id="input-x" accept="image/*" />
+          <span>Déposez une ou plusieurs images ici</span>
+          <input type="file" id="input-x" accept="image/*" multiple />
         </label>
-        <div class="preview" id="preview-x"></div>
+        <div class="gallery" id="gallery-x">
+          <span class="gallery-empty">Aucune image ajoutée</span>
+        </div>
       </div>
 
       <div class="upload-card">
         <h2>Panneau gauche</h2>
         <label class="dropzone" for="input-y" id="dropzone-y">
-          <span>Déposez l'image ici</span>
-          <input type="file" id="input-y" accept="image/*" />
+          <span>Déposez une ou plusieurs images ici</span>
+          <input type="file" id="input-y" accept="image/*" multiple />
         </label>
-        <div class="preview" id="preview-y"></div>
+        <div class="gallery" id="gallery-y">
+          <span class="gallery-empty">Aucune image ajoutée</span>
+        </div>
       </div>
     </section>
-
-    <div class="actions">
-      <button id="merge-btn">Panneliser</button>
-      <button id="download-btn" class="secondary" disabled>Télécharger</button>
-    </div>
 
     <section class="output-card">
       <h2>Résultat</h2>
       <div class="output-preview" id="output-preview">
         <span>Aucun résultat pour le moment</span>
       </div>
+      <div class="progress-wrap" id="progress-wrap" hidden>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="progress-text" id="progress-text">0%</span>
+      </div>
     </section>
+
+    </div>
+
+    <section class="settings-card">
+      <h2>Paramètres d'animation</h2>
+      <div class="settings-grid">
+        <label class="setting">
+          <span>Durée d'affichage (s)</span>
+          <input type="number" id="display-duration" min="0.2" step="0.1" value="3">
+        </label>
+        <label class="setting">
+          <span>Durée de transition (s)</span>
+          <input type="number" id="transition-duration" min="0" step="0.1" value="0.6">
+        </label>
+        <label class="setting">
+          <span>Fluidité (images/s)</span>
+          <select id="fps-select">
+            <option value="8">8 (léger)</option>
+            <option value="10">10</option>
+            <option value="12" selected>12 (recommandé)</option>
+            <option value="15">15</option>
+            <option value="20">20 (lourd)</option>
+          </select>
+        </label>
+        <label class="setting">
+          <span>Échelle sortie</span>
+          <select id="scale-select">
+            <option value="1">100% (native)</option>
+            <option value="0.75">75%</option>
+            <option value="0.5">50% (plus petit)</option>
+            <option value="0.25">25% (très petit)</option>
+          </select>
+        </label>
+        <label class="setting">
+          <span>Qualité GIF (1 = max qualité)</span>
+          <input type="number" id="gif-quality" min="1" max="50" step="1" value="10">
+        </label>
+        <label class="setting">
+          <span>Ignorer trames similaires (%)</span>
+          <input type="number" id="skip-similarity" min="0" max="100" step="1" value="2">
+        </label>
+      </div>
+      <p class="estimate" id="estimate-text">Ajoutez des images dans les deux panneaux pour voir une estimation.</p>
+      
+      <div class="settings-actions">
+        <div class="actions">
+          <button id="merge-btn" disabled>Générer le GIF</button>
+          <button id="download-btn" class="secondary" disabled>Télécharger</button>
+        </div>
+      </div>
+    </section>
+
+    
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
