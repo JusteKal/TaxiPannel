@@ -8,6 +8,8 @@ export interface Asset {
   name: string;
   width: number;
   height: number;
+  /** Frame count as declared by the source; 1 for a still image. */
+  frames: number;
   bytes: Uint8Array;
   size: number;
   createdAt: number;
@@ -19,7 +21,22 @@ export interface Asset {
 }
 
 export type JobStatus = "queued" | "running" | "done" | "failed" | "canceled";
-export type JobPhase = "queued" | "decoding" | "palette" | "encoding" | "optimizing" | "settled";
+export type JobPhase =
+  | "queued"
+  | "decoding"
+  | "palette"
+  | "encoding"
+  | "optimizing"
+  | "shrinking"
+  | "settled";
+
+/** What the size budget forced us to change, relative to what was requested. */
+export interface JobDegradation {
+  gifQuality: number;
+  fps: number;
+  skipSimilarity: number;
+  steps: number;
+}
 
 export interface JobError {
   code: PanelErrorCode;
@@ -44,6 +61,8 @@ export interface Job {
   loopSeconds: number;
   result: Uint8Array | null;
   bytes: number | null;
+  budgetBytes: number;
+  degradation: JobDegradation | null;
   error: JobError | null;
   createdAt: number;
   lastSeenAt: number;

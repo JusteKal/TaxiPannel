@@ -17,6 +17,7 @@ export const fr = {
     drop: "Déposez pour ajouter",
     tooBig: "« {name} » dépasse {max}.",
     notAnImage: "« {name} » n'est pas une image.",
+    truncated: "« {name} » dépasse {max} trames : seules les premières seront utilisées.",
     state: {
       uploading: "Envoi…",
       failed: "Échec",
@@ -28,6 +29,7 @@ export const fr = {
     remove: "Retirer",
     emptyTitle: "Aucune image",
     emptyText: "Ajoutez au moins une image pour ce panneau.",
+    animated: "{n} trames",
   },
   settings: {
     title: "Paramètres d'animation",
@@ -73,12 +75,16 @@ export const fr = {
     cancel: "Annuler",
     alt: "Animation pannelisée",
     frames: "{kept} trames sur {total}",
+    budget: "budget {budget}",
+    degraded:
+      "Réduit automatiquement pour tenir sous {budget} : qualité {quality}, {fps} img/s, seuil de similarité {skip} %.",
     phase: {
       queued: "En file d'attente…",
       decoding: "Préparation des images…",
       palette: "Analyse des couleurs…",
       encoding: "Encodage du GIF…",
       optimizing: "Optimisation…",
+      shrinking: "Réduction sous le budget…",
       settled: "Terminé",
     },
   },
@@ -113,6 +119,8 @@ export const fr = {
     emptyPanel: "Ajoutez au moins une image dans chaque panneau.",
     framesExceeded: "{frames} trames, au-delà du maximum recommandé de {max}.",
     framesTooMany: "{frames} trames : au-delà de la limite de {max}. Réduisez la boucle.",
+    budgetExceeded:
+      "Impossible de descendre sous {budget} : le meilleur essai fait {bytes}. Réduisez l'échelle de sortie ou raccourcissez la boucle.",
     jobNotFound: "Génération introuvable.",
     jobNotReady: "La génération n'est pas terminée.",
     jobFailed: "La génération a échoué.",

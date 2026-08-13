@@ -220,6 +220,66 @@ export function panelStateAt(
   return { idx, nextIdx: null, progress: 0 };
 }
 
+// --- Animated sources -----------------------------------------------------
+
+/**
+ * Browsers clamp GIF frame delays below 2 centiseconds to 100 ms, because a
+ * huge number of GIFs in the wild declare 0 and would otherwise run at monitor
+ * speed. Applying the same rule here is what makes the export match what the
+ * user saw when they previewed the file anywhere else.
+ */
+export const MIN_SOURCE_DELAY_MS = 20;
+export const NORMALISED_SOURCE_DELAY_MS = 100;
+
+export interface AnimationTiming {
+  /** Cumulative END time of each frame, in ms. Single-element for a still. */
+  cumulativeMs: readonly number[];
+  durationMs: number;
+  frameCount: number;
+}
+
+export function makeTiming(delaysMs: readonly number[]): AnimationTiming {
+  if (delaysMs.length <= 1) {
+    return { cumulativeMs: [0], durationMs: 0, frameCount: 1 };
+  }
+  const cumulative: number[] = [];
+  let total = 0;
+  for (const raw of delaysMs) {
+    total += raw < MIN_SOURCE_DELAY_MS ? NORMALISED_SOURCE_DELAY_MS : raw;
+    cumulative.push(total);
+  }
+  return { cumulativeMs: cumulative, durationMs: total, frameCount: delaysMs.length };
+}
+
+/**
+ * Which frame of an animated source is showing at `seconds`.
+ *
+ * The source runs on its own continuous clock rather than restarting when its
+ * slot comes round: an image is already fading in before its slot begins, so
+ * anchoring to the slot start would make the incoming copy freeze mid-fade.
+ * The trade-off is that a source whose duration does not divide the panel loop
+ * shows a seam at the loop point — `sourceLoopsCleanly` reports that.
+ */
+export function frameIndexAt(timing: AnimationTiming, seconds: number): number {
+  if (timing.durationMs <= 0 || timing.frameCount <= 1) return 0;
+  const ms = mod(seconds * 1000, timing.durationMs);
+  let lo = 0;
+  let hi = timing.cumulativeMs.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (ms < timing.cumulativeMs[mid]!) hi = mid;
+    else lo = mid + 1;
+  }
+  return lo;
+}
+
+/** True when the source's own animation restarts exactly at the panel loop point. */
+export function sourceLoopsCleanly(timing: AnimationTiming, totalLoopSeconds: number): boolean {
+  if (timing.durationMs <= 0) return true;
+  const loops = (totalLoopSeconds * 1000) / timing.durationMs;
+  return Math.abs(loops - Math.round(loops)) < 1e-6;
+}
+
 export type PanelSide = "right" | "left";
 
 /**
@@ -252,6 +312,65 @@ export interface EncodeQuality {
  * 1..10 is intentionally flat: the historical default (10) must still produce a
  * full 256-colour, non-lossy GIF, so nobody's existing asset silently degrades.
  */
+// --- Output size budget ---------------------------------------------------
+
+/** Hard ceiling on the delivered GIF. Overridable with MAX_OUTPUT_BYTES. */
+export const DEFAULT_OUTPUT_BUDGET_BYTES = 5 * 1024 * 1024;
+
+/** How many degraded re-encodes to attempt before giving up. */
+export const MAX_BUDGET_ATTEMPTS = 4;
+
+/**
+ * Next rung of the degradation ladder, or null when it is exhausted.
+ *
+ * `scale` is deliberately never touched: the atlas dimensions are a contract
+ * with the in-game resource, so shrinking them to hit a byte budget would
+ * silently deliver the wrong asset. Everything else — palette, lossiness,
+ * frame dedup, then frame rate — is fair game, in that order, because that is
+ * roughly increasing order of how visible the loss is.
+ *
+ * `overshoot` is bytes/budget from the previous attempt, so a file that missed
+ * by 5 % does not get the same treatment as one that missed by 5x.
+ */
+export function degradeForBudget(
+  settings: Settings,
+  overshoot: number,
+  attempt: number,
+): Settings | null {
+  const quality = (target: number) => Math.max(settings.gifQuality, target);
+  const skip = (target: number) => Math.max(settings.skipSimilarity, target);
+  const slowerFps = (from: number): Fps => {
+    const i = FPS_OPTIONS.indexOf(from as Fps);
+    return i > 0 ? FPS_OPTIONS[i - 1]! : FPS_OPTIONS[0]!;
+  };
+
+  switch (attempt) {
+    case 1:
+      return {
+        ...settings,
+        gifQuality: quality(overshoot <= 1.5 ? 20 : overshoot <= 3 ? 35 : 50),
+      };
+    case 2:
+      return { ...settings, gifQuality: quality(50), skipSimilarity: skip(8) };
+    case 3:
+      return {
+        ...settings,
+        gifQuality: quality(50),
+        skipSimilarity: skip(15),
+        fps: slowerFps(settings.fps),
+      };
+    case 4:
+      return {
+        ...settings,
+        gifQuality: quality(50),
+        skipSimilarity: skip(25),
+        fps: FPS_OPTIONS[0]!,
+      };
+    default:
+      return null;
+  }
+}
+
 export function encodeQuality(gifQuality: number): EncodeQuality {
   const q = Math.min(50, Math.max(1, Math.round(gifQuality)));
   if (q <= QUALITY_LOSSLESS_MAX) return { colors: 256, lossy: 0 };

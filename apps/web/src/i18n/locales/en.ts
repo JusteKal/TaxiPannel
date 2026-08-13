@@ -15,6 +15,7 @@ export const en: MessageSchema = {
     drop: "Drop to add",
     tooBig: "“{name}” is larger than {max}.",
     notAnImage: "“{name}” is not an image.",
+    truncated: "“{name}” has more than {max} frames; only the first ones are used.",
     state: {
       uploading: "Uploading…",
       failed: "Failed",
@@ -26,6 +27,7 @@ export const en: MessageSchema = {
     remove: "Remove",
     emptyTitle: "No images",
     emptyText: "Add at least one image to this panel.",
+    animated: "{n} frames",
   },
   settings: {
     title: "Animation settings",
@@ -70,12 +72,16 @@ export const en: MessageSchema = {
     cancel: "Cancel",
     alt: "Panelised animation",
     frames: "{kept} of {total} frames",
+    budget: "budget {budget}",
+    degraded:
+      "Automatically reduced to fit under {budget}: quality {quality}, {fps} fps, similarity threshold {skip}%.",
     phase: {
       queued: "Queued…",
       decoding: "Preparing images…",
       palette: "Analysing colours…",
       encoding: "Encoding the GIF…",
       optimizing: "Optimising…",
+      shrinking: "Shrinking to fit the budget…",
       settled: "Done",
     },
   },
@@ -109,6 +115,8 @@ export const en: MessageSchema = {
     emptyPanel: "Add at least one image to each panel.",
     framesExceeded: "{frames} frames, above the recommended maximum of {max}.",
     framesTooMany: "{frames} frames: above the {max} limit. Shorten the loop.",
+    budgetExceeded:
+      "Cannot get under {budget}: the best attempt is {bytes}. Reduce the output scale or shorten the loop.",
     jobNotFound: "Generation not found.",
     jobNotReady: "The generation is not finished.",
     jobFailed: "The generation failed.",

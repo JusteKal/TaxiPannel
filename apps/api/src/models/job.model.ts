@@ -1,14 +1,21 @@
 import { getAsset, panelImage, touchAssets } from "./asset.model";
-import type { PanelSource } from "./compose.model";
+import type { PanelSource, SourceAnimation } from "./compose.model";
 import { type EncodePhase, encodeGif } from "./encoder.model";
 import { PanelError } from "./errors";
-import { computeTimeline, MAX_RECOMMENDED_FRAMES, type Settings } from "./timeline.model";
+import {
+  computeTimeline,
+  DEFAULT_OUTPUT_BUDGET_BYTES,
+  MAX_RECOMMENDED_FRAMES,
+  makeTiming,
+  type Settings,
+} from "./timeline.model";
 import type { Job, JobPhase } from "./types";
 
 const MAX_CONCURRENT_JOBS = Number(process.env.MAX_CONCURRENT_JOBS ?? 2);
 const MAX_QUEUED_JOBS = Number(process.env.MAX_QUEUED_JOBS ?? 8);
 const MAX_JOBS = Number(process.env.MAX_JOBS ?? 200);
 const JOB_TTL_MS = Number(process.env.JOB_TTL_MS ?? 10 * 60 * 1000);
+const OUTPUT_BUDGET_BYTES = Number(process.env.MAX_OUTPUT_BYTES ?? DEFAULT_OUTPUT_BUDGET_BYTES);
 
 /** Hard DoS ceiling. MAX_RECOMMENDED_FRAMES (600) is only a warning. */
 const MAX_FRAMES = Number(process.env.MAX_FRAMES ?? 3000);
@@ -29,9 +36,12 @@ const waiting: Array<() => void> = [];
  */
 const PHASE_WEIGHTS: Record<EncodePhase | "decoding", [number, number]> = {
   decoding: [0, 0.05],
-  palette: [0.05, 0.45],
-  encoding: [0.45, 0.9],
-  optimizing: [0.9, 1],
+  palette: [0.05, 0.4],
+  encoding: [0.4, 0.8],
+  optimizing: [0.8, 0.88],
+  // Reserved for budget retries. Most jobs never enter it and jump from 0.88
+  // straight to done.
+  shrinking: [0.88, 0.99],
 };
 
 export interface CreateJobInput {
@@ -87,6 +97,8 @@ export function createJob(sessionId: string, input: CreateJobInput): Job {
     loopSeconds: timeline.totalLoopSeconds,
     result: null,
     bytes: null,
+    budgetBytes: OUTPUT_BUDGET_BYTES,
+    degradation: null,
     error: null,
     createdAt: Date.now(),
     lastSeenAt: Date.now(),
@@ -186,7 +198,7 @@ async function run(job: Job): Promise<void> {
     const left = await loadPanel(job, job.leftIds, timeline.panelW, timeline.panelH);
     setProgress(job, "decoding", 1);
 
-    const { gif, keptFrames } = await encodeGif({
+    const encoded = await encodeGif({
       jobId: job.id,
       timeline,
       settings: job.settings,
@@ -196,9 +208,21 @@ async function run(job: Job): Promise<void> {
       signal: job.abort.signal,
     });
 
-    job.result = gif;
-    job.bytes = gif.byteLength;
-    job.keptFrames = keptFrames;
+    job.result = encoded.gif;
+    job.bytes = encoded.gif.byteLength;
+    job.keptFrames = encoded.keptFrames;
+    if (encoded.degradedSteps > 0) {
+      // fps can change, which moves the frame count and the loop length — the
+      // view has to report what was actually produced, not what was asked for.
+      job.totalFrames = encoded.timeline.totalFrames;
+      job.loopSeconds = encoded.timeline.totalLoopSeconds;
+      job.degradation = {
+        gifQuality: encoded.settings.gifQuality,
+        fps: encoded.settings.fps,
+        skipSimilarity: encoded.settings.skipSimilarity,
+        steps: encoded.degradedSteps,
+      };
+    }
     touchAssets([...job.rightIds, ...job.leftIds]);
     settle(job, "done");
   } catch (err) {
@@ -221,12 +245,12 @@ async function loadPanel(
   width: number,
   height: number,
 ): Promise<PanelSource> {
-  const images: Uint8Array[] = [];
+  const images: SourceAnimation[] = [];
   let opaque = true;
   for (const [i, id] of ids.entries()) {
     const asset = getAsset(id, job.sessionId);
     const resized = await panelImage(asset, width, height);
-    images.push(resized.data);
+    images.push({ frames: resized.frames, timing: makeTiming(resized.delaysMs) });
     opaque &&= resized.opaque;
     setProgress(job, "decoding", (i + 1) / (ids.length * 2));
   }

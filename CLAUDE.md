@@ -48,6 +48,41 @@ taxi montre le même panneau des deux côtés. **Réordonner ces quatre tuples c
 l'asset in-game.** L'aperçu affiche l'atlas complet par défaut précisément pour
 qu'une inversion droite/gauche se voie avant l'export.
 
+## Les sources animées tournent sur l'horloge absolue de la boucle
+
+`composePanelFrame` prend deux temps : `position` (où en est le panneau dans son
+propre cycle, ce qui décide quelle image est affichée) et `clock` (le temps
+absolu de la boucle, qui décide quelle trame de la source animée est montrée).
+Les deux diffèrent dès qu'un panneau a moins d'images que l'autre.
+
+Ancrer la source sur le début de son créneau serait plus intuitif mais faux :
+une image commence à apparaître en fondu **avant** que son créneau démarre, donc
+sa phase serait négative et elle se figerait sur la trame 0 pendant tout le
+fondu. `sourceLoopsCleanly()` sert à signaler l'effet de bord — une source dont
+la durée ne divise pas la boucle a une coupure au point de bouclage.
+
+Le décodage GIF côté client (`utils/gif.ts`) doit reproduire la composition que
+libvips fait en interne : gifuct rend des **patches** avec offset et mode de
+disposal, pas des trames complètes. Les modes 2 (effacer) et 3 (restaurer) sont
+gérés explicitement. Se tromper ici fait diverger l'aperçu de l'export, ce que
+l'architecture entière cherche à empêcher. Les bitmaps sont créés directement à
+la géométrie du panneau, ce qui reproduit le `fit: "fill"` de sharp et borne la
+mémoire à 120 trames × 128 Kio.
+
+## Le budget de taille ne touche jamais `scale`
+
+`degradeForBudget()` réessaie jusqu'à quatre fois en dégradant palette, puis
+déduplication, puis fps. L'échelle de sortie est exclue : les dimensions de
+l'atlas sont un contrat avec le jeu. Quand l'échelle est épuisée, on échoue avec
+`budgetExceeded` plutôt que de livrer un asset aux mauvaises dimensions.
+
+Chaque tentative repart des réglages **d'origine**, pas des précédents, pour que
+l'échelle reste absolue et qu'un utilisateur ayant déjà demandé une qualité 40
+ne soit jamais ramené à 20.
+
+Les tentatives de réduction sont regroupées dans une phase `shrinking` : rejouer
+`palette`/`encoding` ferait reculer la barre de progression.
+
 ## L'encodage est en deux passes ffmpeg, et ce n'est pas négociable
 
 Le filtergraph mono-passe habituel —

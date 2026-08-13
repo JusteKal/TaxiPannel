@@ -11,11 +11,47 @@ en GIF animé — la disposition que la ressource in-game attend.
 
 - Deux panneaux indépendants, N images chacun, réordonnables.
 - Fondu croisé linéaire entre images, durée d'affichage et de transition réglables.
+- **Sources animées** : déposez un GIF animé, il joue dans le panneau.
 - Aperçu animé en direct dans un `<canvas>`, avec lecture / pause / scrub, **avant**
   de générer quoi que ce soit.
 - Encodage GIF **côté serveur** (ffmpeg + gifsicle), suivi en temps réel par SSE.
+- **Budget de taille garanti** : le fichier livré tient sous 5 Mo, et l'outil dit
+  ce qu'il a dû réduire pour y arriver.
 - Déduplication de trames : les images tenues sont fusionnées en une seule trame
   au délai cumulé, ce qui réduit fortement la taille sans toucher au rendu.
+
+### Sources animées
+
+Un GIF animé déposé dans un panneau joue **sur sa propre horloge continue**,
+calée sur le temps absolu de la boucle. Il ne redémarre pas quand son tour
+revient : une image commence à apparaître en fondu *avant* le début de son
+créneau, donc l'ancrer sur le créneau la ferait se figer en plein fondu.
+
+Conséquence : si la durée du GIF source ne divise pas la durée de la boucle, son
+animation présente une coupure au point de bouclage. Mettre par exemple un GIF
+de 1,2 s dans une boucle de 21,6 s (18 tours exacts) évite ça.
+
+Les délais de trame inférieurs à 2 centisecondes sont remontés à 100 ms, comme
+le font tous les navigateurs — beaucoup de GIF déclarent 0 et tourneraient sinon
+à la vitesse de l'écran. Au-delà de `MAX_SOURCE_FRAMES` (120) les trames
+supplémentaires sont ignorées, avec un avertissement dans l'interface.
+
+### Budget de 5 Mo
+
+Après encodage, si le fichier dépasse le budget, l'encodeur **redescend et
+réessaie**, jusqu'à quatre fois, dans cet ordre : palette et compression avec
+perte, puis seuil de déduplication, puis fréquence d'images.
+
+**`Échelle sortie` n'est jamais touchée** : les dimensions de l'atlas sont un
+contrat avec la ressource in-game, les réduire pour tenir un budget livrerait
+silencieusement le mauvais asset. Si l'échelle de dégradation est épuisée, la
+génération échoue avec `budgetExceeded` et l'interface invite à réduire
+l'échelle ou raccourcir la boucle — c'est une décision qui appartient à
+l'utilisateur.
+
+Toute dégradation appliquée est affichée sur le résultat : *« Réduit
+automatiquement pour tenir sous 5 Mo : qualité 50, 10 img/s, seuil de similarité
+15 % »*. Le budget est réglable via `MAX_OUTPUT_BYTES`.
 
 Hors périmètre volontairement : pas de comptes, pas de base de données, pas
 d'historique. Tout l'état vit en mémoire et expire.
@@ -29,8 +65,12 @@ d'historique. Tout l'état vit en mémoire et expire.
   Pas de Pinia, pas de Tailwind, pas de bibliothèque de composants.
 - **Typage traversant** — `hc<AppType>` infère chemins, corps et réponses depuis
   le type de l'app Hono. Aucun codegen, aucun schéma dupliqué.
-- **Encodage** — `sharp` pour décoder/redimensionner, composition en JS pur sur
-  `Uint8Array`, puis `ffmpeg` (palettegen/paletteuse) et `gifsicle -O3`.
+- **Encodage** — `sharp` pour décoder/redimensionner (GIF animés compris),
+  composition en JS pur sur `Uint8Array`, puis `ffmpeg` (palettegen/paletteuse)
+  et `gifsicle -O3`.
+- **Décodage GIF côté client** — `gifuct-js`, parce que `createImageBitmap` sur
+  un GIF ne rend que la première trame et que `ImageDecoder` (WebCodecs) n'est
+  pas assez répandu pour porter la fonctionnalité principale.
 - **Outillage** — Biome 2.5.6 (lint + format + tri des imports, JS/TS/JSON/CSS).
 
 ## Arborescence
@@ -91,7 +131,7 @@ Toutes les routes exigent l'en-tête `x-session-id` sauf `/health`.
 | `GET` | `/health` | — | `200 { ok, ffmpeg, gifsicle, assets, total, running, queued }` (503 si un encodeur manque) | — |
 | `POST` | `/assets` | `multipart/form-data`, champ `file` | `201 AssetView` | `unsupportedImage`, `imageTooLarge`, `tooManyAssets`, `payloadTooLarge`, `rateLimited` |
 | `DELETE` | `/assets/:id` | — | `204` | `assetNotFound` |
-| `POST` | `/jobs` | `{ right[], left[], settings, acknowledgeFrames? }` | `202 JobView` | `invalidRequest`, `assetNotFound`, `framesExceeded`, `framesTooMany`, `serverBusy`, `encoderMissing` |
+| `POST` | `/jobs` | `{ right[], left[], settings, acknowledgeFrames? }` | `202 JobView` | `invalidRequest`, `assetNotFound`, `framesExceeded`, `framesTooMany`, `budgetExceeded`, `serverBusy`, `encoderMissing` |
 | `GET` | `/jobs/:id` | — | `200 JobView` | `jobNotFound` |
 | `GET` | `/jobs/:id/events` | — | `200 text/event-stream` de `JobView` | `jobNotFound` |
 | `GET` | `/jobs/:id/result` | — | `200 image/gif` | `jobNotFound`, `jobNotReady`, `jobFailed` |
@@ -187,3 +227,4 @@ Aucun fichier `LICENSE` n'est présent dans le dépôt — à ajouter selon votr
 
 Les icônes sont des tracés [Font Awesome Free 6](https://fontawesome.com/license/free)
 (solid), CC BY 4.0. La police Poppins est distribuée sous OFL via Fontsource.
+`gifuct-js` est sous licence MIT.

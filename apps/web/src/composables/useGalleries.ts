@@ -1,6 +1,8 @@
+import { type AnimationTiming, makeTiming } from "@taxipannel/api/timeline";
 import { markRaw, shallowRef } from "vue";
 import { ApiError, deleteAsset, uploadAsset } from "../api/client";
 import { prettyBytes } from "../utils/format";
+import { decodeSource, MAX_SOURCE_FRAMES } from "../utils/gif";
 import { useAlerts } from "./useAlerts";
 
 export type PanelSide = "right" | "left";
@@ -12,8 +14,14 @@ export interface GalleryItem {
   name: string;
   /** Object URL for the <img> thumbnail. Exactly one revoke per create. */
   url: string;
-  /** markRaw'd — a Proxy-wrapped ImageBitmap is not a valid CanvasImageSource. */
-  bitmap: ImageBitmap;
+  /**
+   * One entry for a still, N for an animated GIF. markRaw'd — a Proxy-wrapped
+   * ImageBitmap is not a valid CanvasImageSource and drawImage throws on it.
+   */
+  frames: ImageBitmap[];
+  /** Built with the SAME makeTiming the encoder uses, delay normalisation included. */
+  timing: AnimationTiming;
+  truncated: boolean;
   state: "uploading" | "ready" | "failed";
 }
 
@@ -50,14 +58,18 @@ export function useGalleries() {
   }
 
   async function addOne(side: PanelSide, file: File) {
-    let bitmap: ImageBitmap;
+    let decoded: Awaited<ReturnType<typeof decodeSource>>;
     try {
-      // createImageBitmap decodes off the main thread — no FileReader, no data
-      // URL, no <img> load race. This alone deletes two of the old leaks.
-      bitmap = markRaw(await createImageBitmap(file));
+      // Decoded off the main thread — no FileReader, no data URL, no <img> load
+      // race. This alone deletes two of the old leaks.
+      decoded = await decodeSource(file);
     } catch {
       push("upload.notAnImage", { name: file.name }, "warning");
       return;
+    }
+
+    if (decoded.truncated) {
+      push("upload.truncated", { name: file.name, max: MAX_SOURCE_FRAMES }, "warning");
     }
 
     const item: GalleryItem = {
@@ -65,7 +77,9 @@ export function useGalleries() {
       assetId: null,
       name: file.name || "image",
       url: URL.createObjectURL(file),
-      bitmap,
+      frames: decoded.frames.map((f) => markRaw(f)),
+      timing: makeTiming(decoded.delaysMs),
+      truncated: decoded.truncated,
       state: "uploading",
     };
     const ref = bucket(side);
@@ -116,7 +130,8 @@ export function useGalleries() {
 
 function disposeItem(item: GalleryItem): void {
   URL.revokeObjectURL(item.url);
-  item.bitmap.close();
+  // Every frame, not just the first: an animated source holds up to 120.
+  for (const frame of item.frames) frame.close();
   if (item.assetId) void deleteAsset(item.assetId).catch(() => {});
 }
 

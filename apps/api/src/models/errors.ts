@@ -16,6 +16,7 @@ export type PanelErrorCode =
   | "emptyPanel"
   | "framesExceeded"
   | "framesTooMany"
+  | "budgetExceeded"
   // job lifecycle
   | "jobNotFound"
   | "jobNotReady"

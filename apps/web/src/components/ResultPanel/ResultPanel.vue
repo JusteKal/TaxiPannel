@@ -15,7 +15,12 @@ const percent = computed(() => Math.round((job.value?.progress ?? 0) * 100));
   <section class="mc-panel result">
     <header class="mc-card-header">
       <span><Icon name="image" /> {{ t("result.title") }}</span>
-      <span v-if="job?.bytes" class="mc-badge accent mc-num">{{ prettyBytes(job.bytes) }}</span>
+      <span v-if="job?.bytes" class="mc-cluster result__size">
+        <span class="mc-badge accent mc-num">{{ prettyBytes(job.bytes) }}</span>
+        <span class="mc-muted mc-num result__budget">
+          {{ t("result.budget", { budget: prettyBytes(job.budgetBytes) }) }}
+        </span>
+      </span>
     </header>
 
     <div v-if="!job" class="mc-empty compact">
@@ -34,6 +39,21 @@ const percent = computed(() => Math.round((job.value?.progress ?? 0) * 100));
     </template>
 
     <template v-else-if="job.status === 'done' && resultUrl">
+      <!-- Say what was changed and why. Silently rewriting someone's settings
+           to hit a byte budget is the kind of thing they find out about later. -->
+      <p v-if="job.degradation" class="mc-alert mc-alert--warning result__degraded">
+        <Icon name="warning" :size="14" />
+        <span class="mc-alert__body">
+          {{
+            t("result.degraded", {
+              budget: prettyBytes(job.budgetBytes),
+              quality: job.degradation.gifQuality,
+              fps: job.degradation.fps,
+              skip: job.degradation.skipSimilarity,
+            })
+          }}
+        </span>
+      </p>
       <img class="result__image" :src="resultUrl" :alt="t('result.alt')" />
       <div class="mc-cluster between result__footer">
         <span class="mc-label mc-num">

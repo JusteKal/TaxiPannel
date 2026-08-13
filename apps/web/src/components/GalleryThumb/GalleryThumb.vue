@@ -15,7 +15,14 @@ const { t } = useI18n();
     <!-- :alt binds an attribute as a string. The original interpolated the
          filename into innerHTML, which broke on a quote. -->
     <img class="thumb__image" :src="item.url" :alt="item.name" />
-    <span v-if="item.state !== 'ready'" class="mc-status thumb__state" :class="item.state === 'failed' ? 'error' : 'busy'">
+    <span v-if="item.frames.length > 1" class="mc-badge accent thumb__frames mc-num">
+      <Icon name="film" :size="9" /> {{ item.frames.length }}
+    </span>
+    <span
+      v-if="item.state !== 'ready'"
+      class="mc-status thumb__state"
+      :class="item.state === 'failed' ? 'error' : 'busy'"
+    >
       {{ t(`upload.state.${item.state}`) }}
     </span>
     <div class="thumb__controls">

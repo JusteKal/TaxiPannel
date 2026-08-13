@@ -1,5 +1,5 @@
 import type { PanelErrorCode, PanelErrorParams } from "../models/errors";
-import type { Job, JobPhase, JobStatus } from "../models/types";
+import type { Job, JobDegradation, JobPhase, JobStatus } from "../models/types";
 
 export interface JobView {
   id: string;
@@ -12,6 +12,9 @@ export interface JobView {
   height: number;
   loopSeconds: number;
   bytes: number | null;
+  budgetBytes: number;
+  /** Null when the requested settings already fitted the budget. */
+  degradation: JobDegradation | null;
   error: { code: PanelErrorCode; params?: PanelErrorParams } | null;
 }
 
@@ -33,6 +36,8 @@ export function presentJob(job: Job): JobView {
     height: job.height,
     loopSeconds: job.loopSeconds,
     bytes: job.bytes,
+    budgetBytes: job.budgetBytes,
+    degradation: job.degradation,
     error: job.error ? { code: job.error.code, params: job.error.params } : null,
   };
 }

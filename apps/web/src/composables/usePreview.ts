@@ -1,4 +1,10 @@
-import { ATLAS_QUADRANTS, mod, panelPositionAt, panelStateAt } from "@taxipannel/api/timeline";
+import {
+  ATLAS_QUADRANTS,
+  frameIndexAt,
+  mod,
+  panelPositionAt,
+  panelStateAt,
+} from "@taxipannel/api/timeline";
 import { markRaw, onBeforeUnmount, type Ref, shallowRef, watch } from "vue";
 import { type GalleryItem, useGalleries } from "./useGalleries";
 import { useSettings } from "./useSettings";
@@ -32,10 +38,16 @@ export function usePreview(canvasRef: Ref<HTMLCanvasElement | null>) {
   let raf = 0;
   let originMs = performance.now();
 
+  /** Same rule as the encoder: animated sources run on the absolute loop clock. */
+  function frameOf(item: GalleryItem, clock: number): ImageBitmap {
+    return item.frames[frameIndexAt(item.timing, clock)] ?? item.frames[0]!;
+  }
+
   function drawPanel(
     target: HTMLCanvasElement,
     items: readonly GalleryItem[],
     pos: number,
+    clock: number,
     w: number,
     h: number,
   ): void {
@@ -52,10 +64,10 @@ export function usePreview(canvasRef: Ref<HTMLCanvasElement | null>) {
     scratch.height = h;
     scratchCtx.clearRect(0, 0, w, h);
     scratchCtx.globalAlpha = 1;
-    scratchCtx.drawImage(items[idx]!.bitmap, 0, 0, w, h);
+    scratchCtx.drawImage(frameOf(items[idx]!, clock), 0, 0, w, h);
     if (nextIdx !== null) {
       scratchCtx.globalAlpha = progress;
-      scratchCtx.drawImage(items[nextIdx]!.bitmap, 0, 0, w, h);
+      scratchCtx.drawImage(frameOf(items[nextIdx]!, clock), 0, 0, w, h);
       scratchCtx.globalAlpha = 1;
     }
 
@@ -73,8 +85,8 @@ export function usePreview(canvasRef: Ref<HTMLCanvasElement | null>) {
     const tl = timeline.value;
     const t = position.value;
 
-    drawPanel(panels.right, r, panelPositionAt(t, tl.cycleRight), tl.panelW, tl.panelH);
-    drawPanel(panels.left, l, panelPositionAt(t, tl.cycleLeft), tl.panelW, tl.panelH);
+    drawPanel(panels.right, r, panelPositionAt(t, tl.cycleRight), t, tl.panelW, tl.panelH);
+    drawPanel(panels.left, l, panelPositionAt(t, tl.cycleLeft), t, tl.panelW, tl.panelH);
 
     const single = view.value !== "atlas";
     canvas.width = single ? tl.panelW : tl.atlasW;

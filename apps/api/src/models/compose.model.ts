@@ -6,13 +6,37 @@
 // that is 3600 round trips for an operation that is one fused multiply-add per
 // byte over a 128 KiB buffer.
 
-import { ATLAS_QUADRANTS, panelPositionAt, panelStateAt, type Timeline } from "./timeline.model";
+import {
+  type AnimationTiming,
+  ATLAS_QUADRANTS,
+  frameIndexAt,
+  panelPositionAt,
+  panelStateAt,
+  type Timeline,
+} from "./timeline.model";
+
+/** One source image. A still is just an animation with a single frame. */
+export interface SourceAnimation {
+  frames: readonly Uint8Array[];
+  timing: AnimationTiming;
+}
 
 /** One panel's sources, already resized to panelW x panelH and flattened to RGBA. */
 export interface PanelSource {
-  images: readonly Uint8Array[];
-  /** True when every source image is fully opaque — selects the fast blend path. */
+  images: readonly SourceAnimation[];
+  /** True when every source frame is fully opaque — selects the fast blend path. */
   opaque: boolean;
+}
+
+/**
+ * The frame an animated source shows at absolute loop time `t`.
+ *
+ * `t` is the panel-loop clock and not the slot clock: sources run continuously,
+ * so a copy fading in before its own slot begins keeps moving instead of
+ * freezing on frame 0.
+ */
+function frameOf(source: SourceAnimation, t: number): Uint8Array {
+  return source.frames[frameIndexAt(source.timing, t)] ?? source.frames[0]!;
 }
 
 /** Scratch buffers reused across every frame of a run. */
@@ -68,11 +92,18 @@ export function blendOver(
   }
 }
 
-/** Port of the old composePanelFrame(); `out` is panelW * panelH * 4 bytes. */
+/**
+ * Port of the old composePanelFrame(); `out` is panelW * panelH * 4 bytes.
+ *
+ * `position` is where the panel is inside its own cycle and drives which image
+ * is up; `clock` is the absolute loop time and drives each animated source's
+ * own playback. They differ once a panel's cycle is shorter than the loop.
+ */
 export function composePanelFrame(
   out: Uint8Array,
   panel: PanelSource,
   position: number,
+  clock: number,
   displayDur: number,
   transDur: number,
   step: number,
@@ -84,8 +115,10 @@ export function composePanelFrame(
     transDur,
     step,
   );
-  out.set(panel.images[idx]!);
-  if (nextIdx !== null) blendOver(out, panel.images[nextIdx]!, progress, panel.opaque);
+  out.set(frameOf(panel.images[idx]!, clock));
+  if (nextIdx !== null) {
+    blendOver(out, frameOf(panel.images[nextIdx]!, clock), progress, panel.opaque);
+  }
 }
 
 /** One quadrant blit: row-wise set() — the memcpy the old drawImage() was. */
@@ -123,11 +156,20 @@ export function renderAtlasAt(
     scratch.right,
     right,
     panelPositionAt(t, cycleRight),
+    t,
     displayDur,
     transDur,
     step,
   );
-  composePanelFrame(scratch.left, left, panelPositionAt(t, cycleLeft), displayDur, transDur, step);
+  composePanelFrame(
+    scratch.left,
+    left,
+    panelPositionAt(t, cycleLeft),
+    t,
+    displayDur,
+    transDur,
+    step,
+  );
 
   for (const q of ATLAS_QUADRANTS) {
     const panel = q.source === "right" ? scratch.right : scratch.left;

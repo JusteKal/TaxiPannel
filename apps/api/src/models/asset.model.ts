@@ -37,6 +37,7 @@ export async function createAsset(sessionId: string, file: File): Promise<Asset>
     name: file.name || "image",
     width: meta.width,
     height: meta.height,
+    frames: meta.frames,
     bytes,
     size: bytes.byteLength,
     createdAt: Date.now(),

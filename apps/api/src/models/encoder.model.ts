@@ -2,18 +2,27 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { changedRatio, makeScratch, type PanelSource, renderAtlasAt } from "./compose.model";
 import { PanelError } from "./errors";
-import { encodeQuality, type Settings, type Timeline } from "./timeline.model";
+import {
+  computeTimeline,
+  DEFAULT_OUTPUT_BUDGET_BYTES,
+  degradeForBudget,
+  encodeQuality,
+  MAX_BUDGET_ATTEMPTS,
+  type Settings,
+  type Timeline,
+} from "./timeline.model";
 
 const FFMPEG = process.env.FFMPEG_PATH ?? "ffmpeg";
 const GIFSICLE = process.env.GIFSICLE_PATH ?? "gifsicle";
 const TMP_DIR = process.env.TMP_DIR ?? "/tmp/taxipannel";
 const JOB_TIMEOUT_MS = Number(process.env.JOB_TIMEOUT_MS ?? 120_000);
+const OUTPUT_BUDGET_BYTES = Number(process.env.MAX_OUTPUT_BYTES ?? DEFAULT_OUTPUT_BUDGET_BYTES);
 
 // The composer runs on Bun's only thread. Yielding every N frames keeps the SSE
 // stream and /health answering while a 600-frame job grinds.
 const YIELD_EVERY = 16;
 
-export type EncodePhase = "palette" | "encoding" | "optimizing";
+export type EncodePhase = "palette" | "encoding" | "optimizing" | "shrinking";
 
 export interface EncodeRequest {
   jobId: string;
@@ -28,6 +37,11 @@ export interface EncodeRequest {
 export interface EncodeResult {
   gif: Uint8Array;
   keptFrames: number;
+  /** Settings actually used, which differ from the request when the budget bit. */
+  settings: Settings;
+  timeline: Timeline;
+  /** 0 when the first attempt already fitted. */
+  degradedSteps: number;
 }
 
 /** A frame that survived deduplication, and how long it is held for. */
@@ -50,26 +64,46 @@ interface Context extends EncodeRequest {
   live: Set<Live>;
 }
 
-export async function encodeGif(req: EncodeRequest): Promise<EncodeResult> {
-  const dir = join(TMP_DIR, req.jobId);
-  await mkdir(dir, { recursive: true });
-
-  const ctx: Context = {
+function makeContext(
+  req: EncodeRequest,
+  dir: string,
+  settings: Settings,
+  timeline: Timeline,
+  live: Set<Live>,
+  attempt: number,
+): Context {
+  return {
     ...req,
+    settings,
+    timeline,
     dir,
     paletteFile: join(dir, "palette.png"),
     workFile: join(dir, "work.gif"),
     // Double-buffered: only two atlas frames are ever alive, regardless of how
     // many frames the loop has. This is what keeps a 600-frame job at ~2 MB.
-    atlas: new Uint8Array(req.timeline.atlasBytes),
-    spare: new Uint8Array(req.timeline.atlasBytes),
-    scratch: makeScratch(req.timeline),
-    live: new Set(),
+    atlas: new Uint8Array(timeline.atlasBytes),
+    spare: new Uint8Array(timeline.atlasBytes),
+    scratch: makeScratch(timeline),
+    live,
+    // A retry re-runs palette and encoding from zero. Reporting those phases
+    // again would rewind the bar, so retries are folded into one "shrinking"
+    // phase that advances across attempts instead.
+    onProgress:
+      attempt === 0
+        ? req.onProgress
+        : (_phase, ratio) =>
+            req.onProgress("shrinking", (attempt - 1 + ratio) / MAX_BUDGET_ATTEMPTS),
   };
+}
 
+export async function encodeGif(req: EncodeRequest): Promise<EncodeResult> {
+  const dir = join(TMP_DIR, req.jobId);
+  await mkdir(dir, { recursive: true });
+
+  const live = new Set<Live>();
   let timedOut = false;
   const killAll = () => {
-    for (const p of ctx.live) p.kill("SIGKILL");
+    for (const p of live) p.kill("SIGKILL");
   };
   const onAbort = () => killAll();
   const timer = setTimeout(() => {
@@ -79,10 +113,41 @@ export async function encodeGif(req: EncodeRequest): Promise<EncodeResult> {
   req.signal.addEventListener("abort", onAbort, { once: true });
 
   try {
-    const kept = await passPalette(ctx);
-    await passEncode(ctx, kept);
-    const gif = await passOptimise(ctx, kept);
-    return { gif, keptFrames: kept.length };
+    let settings = req.settings;
+    let timeline = req.timeline;
+    let smallest = Number.POSITIVE_INFINITY;
+
+    // Attempt 0 is the user's own settings. Every retry re-derives from the
+    // ORIGINAL settings rather than compounding, so the ladder stays absolute
+    // and a user who already asked for quality 40 is never nudged back to 20.
+    for (let attempt = 0; attempt <= MAX_BUDGET_ATTEMPTS; attempt++) {
+      const ctx = makeContext(req, dir, settings, timeline, live, attempt);
+      const kept = await passPalette(ctx);
+      await passEncode(ctx, kept);
+      const gif = await passOptimise(ctx, kept);
+
+      if (gif.byteLength <= OUTPUT_BUDGET_BYTES) {
+        return { gif, keptFrames: kept.length, settings, timeline, degradedSteps: attempt };
+      }
+      smallest = Math.min(smallest, gif.byteLength);
+
+      const next = degradeForBudget(
+        req.settings,
+        gif.byteLength / OUTPUT_BUDGET_BYTES,
+        attempt + 1,
+      );
+      if (!next) break;
+      settings = next;
+      timeline = computeTimeline(timeline.nRight, timeline.nLeft, next);
+    }
+
+    // Everything the ladder is allowed to touch has been exhausted. The two
+    // remaining levers — output scale and loop length — change the deliverable,
+    // so they are the user's call, not ours.
+    throw new PanelError(413, "budgetExceeded", "Output exceeds the size budget", {
+      bytes: smallest,
+      budget: OUTPUT_BUDGET_BYTES,
+    });
   } catch (err) {
     if (timedOut) {
       throw new PanelError(500, "encodeTimeout", "Encoding timed out", {
