@@ -1,0 +1,61 @@
+/* Extracted verbatim from the live mindcity-rp.fr app shell (build/app.*.css).
+   Three of these are the identity and are easy to "fix" by accident:
+   - borders are PINK-tinted over a near-black body, not grey;
+   - --mc-radius is 2px, so nothing in this app is a pill except the switch;
+   - text on an accent fill is --mc-on-accent (near-black), never white. */
+:root {
+  color-scheme: dark;
+
+  --mc-body-bg: #110c1a;
+  --mc-surface-shell: #161023;
+  --mc-surface: #211833;
+  --mc-surface-light: #2b2140;
+  /* Darker than the page background: inputs read as inset, not raised. */
+  --mc-surface-input: #181020;
+  --mc-surface-hover: hsla(0, 0%, 100%, 0.06);
+
+  --mc-accent: #5eb3ff;
+  --mc-accent-light: #add5ff;
+  --mc-accent-bg: rgba(94, 179, 255, 0.16);
+  --mc-on-accent: #0e1018;
+
+  --mc-text-strong: #fff;
+  --mc-text: hsla(0, 0%, 100%, 0.87);
+  --mc-text-subtle: hsla(0, 0%, 100%, 0.65);
+  --mc-text-muted: hsla(0, 0%, 100%, 0.5);
+
+  --mc-border: rgba(228, 171, 255, 0.15);
+  --mc-border-row: rgba(228, 171, 255, 0.06);
+
+  --mc-success: #22c55e;
+  --mc-success-strong: #15803d;
+  --mc-success-bg: rgba(34, 197, 94, 0.12);
+  --mc-danger: #ef4444;
+  --mc-danger-strong: #b91c1c;
+  --mc-danger-bg: rgba(239, 68, 68, 0.12);
+  --mc-danger-border: rgba(239, 68, 68, 0.35);
+  --mc-warning: #facc15;
+  --mc-warning-bg: rgba(250, 204, 21, 0.12);
+  --mc-info: #5eb3ff;
+  --mc-info-bg: rgba(94, 179, 255, 0.12);
+  --mc-pink: #e4abff;
+  --mc-pink-bg: rgba(228, 171, 255, 0.12);
+
+  --mc-radius: 2px;
+  --mc-radius-pill: 9px;
+  /* The ONLY shadow in the system. Static content never gets one. */
+  --mc-shadow-float: 0 12px 32px rgba(0, 0, 0, 0.45);
+
+  --mc-font: "Poppins", sans-serif;
+  --mc-transition: 0.12s ease;
+
+  --mc-topnav-h: 56px;
+  --mc-shell-max: 1840px;
+
+  --mc-z-topnav: 1030;
+  --mc-z-menu: 1040;
+  --mc-z-scrim: 1044;
+  --mc-z-drawer: 1045;
+  --mc-z-overlay: 1050;
+  --mc-z-flash: 1090;
+}

@@ -1,0 +1,44 @@
+.mc-overlay {
+  position: fixed;
+  z-index: var(--mc-z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+  inset: 0;
+}
+
+.mc-dialog {
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+  background: var(--mc-surface);
+  /* The one place --mc-shadow-float is allowed: this is a floating layer. */
+  box-shadow: var(--mc-shadow-float);
+}
+
+.mc-dialog__title {
+  color: var(--mc-text-strong);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mc-dialog__body {
+  margin-top: 10px;
+  color: var(--mc-text-subtle);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.mc-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}

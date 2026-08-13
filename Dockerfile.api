@@ -1,0 +1,43 @@
+# Build context is the repository root (see docker-compose.yml).
+FROM oven/bun:1-slim AS runtime
+WORKDIR /app
+
+# The encoders ARE the product. Without them every job fails with
+# `encoderMissing` and /health answers 503, which the HEALTHCHECK below turns
+# into an unhealthy container rather than a silently broken deploy.
+# --no-install-recommends keeps ffmpeg's doc/extra tree out (~60 MB saved).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg gifsicle \
+  && rm -rf /var/lib/apt/lists/*
+
+# Every workspace manifest is copied so the workspace set matches bun.lock:
+# --production implies --frozen-lockfile, which fails if apps/web is missing.
+# --filter then narrows the install to the API's dependencies alone. sharp 0.33
+# has no postinstall script; its native binary arrives as the
+# @img/sharp-linux-x64 OPTIONAL dependency, and --production only drops
+# devDependencies, so it is installed here.
+COPY package.json bun.lock ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+RUN bun install --production --filter '@taxipannel/api'
+
+# Fail the build, not the first upload, if the platform binary is missing.
+# Run from apps/api: bun's isolated linker puts workspace dependencies in
+# apps/api/node_modules, so /app itself cannot resolve sharp. At runtime
+# resolution starts from the importing file, so the app is unaffected.
+# Note this only catches a bad binary when builder and runtime host share an
+# architecture — which they do not on GitHub Actions. See the README.
+RUN cd apps/api && bun -e "import('sharp').then((s)=>console.log('sharp', s.default.versions.vips))"
+
+COPY apps/api ./apps/api
+
+ENV PORT=3000
+ENV TMP_DIR=/tmp/taxipannel
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD bun -e "fetch('http://localhost:'+(process.env.PORT??3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+# Single stage on purpose: Bun runs the TypeScript directly, so there is
+# nothing to compile and a build stage would only duplicate the install.
+CMD ["bun", "run", "apps/api/src/index.ts"]

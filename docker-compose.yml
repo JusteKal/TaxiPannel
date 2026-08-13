@@ -1,0 +1,46 @@
+# Both services bind to 127.0.0.1 ONLY, and that is load-bearing rather than
+# tidy: the API trusts the last X-Forwarded-For hop when TRUST_PROXY=true, so
+# anything that can reach it directly can forge its own rate-limit identity.
+# Caddy (see taxipannel.caddyfile) is the only intended way in.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      PORT: 3000
+      TRUST_PROXY: "true"
+      TMP_DIR: /tmp/taxipannel
+      MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-2}
+      MAX_QUEUED_JOBS: ${MAX_QUEUED_JOBS:-8}
+      MAX_FRAMES: ${MAX_FRAMES:-3000}
+      JOB_TIMEOUT_MS: ${JOB_TIMEOUT_MS:-120000}
+      JOB_TTL_MS: ${JOB_TTL_MS:-600000}
+      MAX_JOBS: ${MAX_JOBS:-200}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-12582912}
+      MAX_ASSETS_PER_SESSION: ${MAX_ASSETS_PER_SESSION:-40}
+      MAX_IMAGES_PER_PANEL: ${MAX_IMAGES_PER_PANEL:-20}
+      MAX_IMAGE_PIXELS: ${MAX_IMAGE_PIXELS:-40000000}
+      ASSET_TTL_MS: ${ASSET_TTL_MS:-1800000}
+      RATE_LIMIT_PER_MIN: ${RATE_LIMIT_PER_MIN:-600}
+      UPLOAD_LIMIT_PER_10MIN: ${UPLOAD_LIMIT_PER_10MIN:-200}
+      JOB_LIMIT_PER_10MIN: ${JOB_LIMIT_PER_10MIN:-30}
+    ports:
+      - "127.0.0.1:${API_PORT:-3000}:3000"
+    # Assets, job results and the frame buffers all live in the process. Two
+    # concurrent jobs peak at roughly 2 MB of frame state each; the rest is
+    # libav's own working set plus whatever the session has uploaded.
+    mem_limit: 1g
+    # Palette and work-GIF churn is pure throwaway I/O, and tmpfs guarantees the
+    # janitor's worst case cannot fill the host disk.
+    tmpfs:
+      - /tmp/taxipannel:size=512m
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+    restart: unless-stopped

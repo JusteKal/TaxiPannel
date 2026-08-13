@@ -1,0 +1,46 @@
+/* Filled variant. No border, no shadow — separation is by surface fill alone. */
+.mc-panel {
+  padding: 22px 26px;
+  border-radius: var(--mc-radius);
+  background: var(--mc-surface);
+  color: var(--mc-text);
+}
+
+/* Borderless grouping: the underlined uppercase header IS the container. */
+.mc-card {
+  margin-bottom: 28px;
+  color: var(--mc-text);
+}
+
+.mc-card-header,
+.mc-section-header {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--mc-border);
+  color: var(--mc-text-strong);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mc-card-header > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mc-card-header svg {
+  color: var(--mc-accent-light);
+}
+
+@media (max-width: 767.98px) {
+  .mc-panel {
+    padding: 18px;
+  }
+}

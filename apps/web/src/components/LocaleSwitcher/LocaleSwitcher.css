@@ -1,0 +1,8 @@
+.locale-switcher {
+  display: flex;
+  gap: 4px;
+}
+
+.locale-switcher .mc-btn {
+  min-width: 40px;
+}

@@ -1,0 +1,53 @@
+.builder {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+.builder__main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.builder__uploads {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+.builder__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.builder__generate {
+  width: 100%;
+}
+
+/* The original had a single max-width:540px query and a 1fr 340px grid that
+   never collapsed, so 541-900px was unusable. Mobile-first on Bootstrap's
+   breakpoints instead. */
+@media (min-width: 576px) {
+  .builder__uploads {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .builder {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  .builder__side {
+    position: sticky;
+    top: calc(var(--mc-topnav-h) + 24px);
+  }
+
+  .builder__generate {
+    height: 40px;
+  }
+}

@@ -1,0 +1,35 @@
+# Build context is the repository root (see docker-compose.yml).
+FROM oven/bun:1 AS build
+WORKDIR /app
+
+COPY package.json bun.lock ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+RUN bun install
+
+# apps/web/tsconfig.json extends this; without it vue-tsc silently falls back
+# to the compiler defaults (ES5 target, no esModuleInterop) and the build fails.
+COPY tsconfig.base.json ./
+# The API source is required at BUILD time only: vue-tsc typechecks against it
+# for AppType and the shared timeline module. `import type` is erased, so
+# nothing server-side reaches the bundle.
+COPY apps/api ./apps/api
+COPY apps/web ./apps/web
+
+RUN bun run --filter '@taxipannel/web' build
+
+FROM oven/bun:1-slim AS runtime
+WORKDIR /app
+
+COPY --from=build /app/apps/web/dist ./dist
+COPY apps/web/server.ts ./server.ts
+
+# Deliberately no VITE_API_URL build arg: the client only knows the relative
+# base "/api", so one image works in every environment.
+ENV PORT=8080
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD bun -e "fetch('http://localhost:'+(process.env.PORT??8080)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["bun", "run", "server.ts"]

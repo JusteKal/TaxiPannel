@@ -1,0 +1,4 @@
+.frame-dialog__tip {
+  margin-top: 10px;
+  color: var(--mc-accent-light);
+}

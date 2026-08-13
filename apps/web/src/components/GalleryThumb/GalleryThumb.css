@@ -1,0 +1,45 @@
+.thumb {
+  position: relative;
+  display: flex;
+  width: 104px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+  background: var(--mc-surface-input);
+}
+
+.thumb--uploading {
+  opacity: 0.7;
+}
+
+.thumb--failed {
+  border-color: var(--mc-danger-border);
+}
+
+.thumb__order {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 1px 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--mc-text-strong);
+}
+
+.thumb__image {
+  width: 100%;
+  height: 46px;
+  border-radius: var(--mc-radius);
+  object-fit: cover;
+}
+
+.thumb__state {
+  font-size: 10.5px;
+}
+
+.thumb__controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
