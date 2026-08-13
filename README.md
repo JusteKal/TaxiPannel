@@ -40,25 +40,6 @@ npx live-server --port=5500
 - Increase `Ignorer trames similaires (%)` to coalesce near-identical frames (2–10%).
 - Tune `Qualité GIF` (worker `gif.js` exposes a numeric `quality` option).
 
-**Server-side rendering (recommended for best speed & quality)**
-For large jobs or many concurrent users, generate GIFs on the server. Recommended stack and pipeline:
-
-- Stack: Node.js worker (Express + Bull/Redis queue) or Python worker.
-- Tools: `sharp` or `libvips` for resize, `ffmpeg` for palette-aware GIF generation, `gifsicle` (or `giflossy`) for final optimization.
-
-Example ffmpeg workflow (frames must be PNG sequence):
-
-```bash
-# generate palette
-ffmpeg -y -i frames_%04d.png -vf palettegen palette.png
-# generate gif with palette for better colors
-ffmpeg -i frames_%04d.png -i palette.png -lavfi paletteuse -r 12 output.gif
-# optional: optimize further
-gifsicle -O3 --lossy=80 output.gif -o output.optim.gif
-```
-
-Expose an async `POST /render` endpoint that accepts images and parameters, enqueues a job, and returns a download URL once processing finishes.
-
 **Where to look in the code**
 - UI and logic: `index.html`, `styles.css`, `script.js`
 - Client-side GIF generation uses `gif.js` (CDN included).
@@ -66,7 +47,6 @@ Expose an async `POST /render` endpoint that accepts images and parameters, enqu
 **Contributing / Next steps**
 - Integrate server-side frame extraction for source GIFs (gifuct-js or server-side tools).
 - Add palette quantization or a server worker for ffmpeg+gifsicle to increase compression.
-- Add unit/integration tests for render pipeline if adding a backend.
 
 **License**
 - MIT-style (add your preferred license file if needed).
