@@ -1,0 +1,36 @@
+/* The card header is uppercase by design and text-transform inherits, which
+   turns the "ko" of "56,2 ko" into "KO". Units are not a label. */
+.result .mc-card-header .result__size {
+  text-transform: none;
+}
+
+.result__size {
+  gap: 8px;
+}
+
+.result__budget {
+  font-size: 11px;
+}
+
+.result__degraded {
+  margin-bottom: 16px;
+}
+
+.result__status {
+  margin: 10px 0 14px;
+  color: var(--mc-text-subtle);
+  font-size: 12.5px;
+}
+
+.result__image {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  margin: 0 auto;
+  border-radius: var(--mc-radius);
+  image-rendering: pixelated;
+}
+
+.result__footer {
+  margin-top: 16px;
+}

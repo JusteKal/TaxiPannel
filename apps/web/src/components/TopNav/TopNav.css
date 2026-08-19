@@ -1,0 +1,69 @@
+/* Lives here rather than in styles/ because exactly one component uses it. A
+   rule moves to styles/ the moment a second component needs it. */
+.mc-topnav {
+  position: sticky;
+  top: 0;
+  z-index: var(--mc-z-topnav);
+  height: var(--mc-topnav-h);
+  border-bottom: 1px solid var(--mc-border);
+  background: var(--mc-surface-shell);
+}
+
+.mc-topnav__inner {
+  display: flex;
+  height: 100%;
+  max-width: var(--mc-shell-max);
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.mc-topnav__logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.mc-topnav__brand {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.15;
+}
+
+.mc-topnav__title {
+  overflow: hidden;
+  color: var(--mc-text-strong);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mc-topnav__tagline {
+  color: var(--mc-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Below 576px the tagline is the first thing worth losing. */
+@media (max-width: 575.98px) {
+  .mc-topnav__tagline {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .mc-topnav__inner {
+    padding: 0 40px;
+  }
+}

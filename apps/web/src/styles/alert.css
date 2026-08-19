@@ -1,0 +1,35 @@
+.mc-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-left: 2px solid var(--mc-info);
+  border-radius: var(--mc-radius);
+  background: var(--mc-info-bg);
+  color: var(--mc-text);
+  font-size: 12.5px;
+}
+
+.mc-alert svg {
+  flex-shrink: 0;
+}
+
+.mc-alert__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mc-alert--success {
+  border-left-color: var(--mc-success);
+  background: var(--mc-success-bg);
+}
+
+.mc-alert--danger {
+  border-left-color: var(--mc-danger);
+  background: var(--mc-danger-bg);
+}
+
+.mc-alert--warning {
+  border-left-color: var(--mc-warning);
+  background: var(--mc-warning-bg);
+}

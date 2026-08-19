@@ -1,0 +1,5 @@
+/* Height lives on .app-shell (styles/base.css). Repeating it here would only
+   give the same rule two owners. */
+#app {
+  isolation: isolate;
+}

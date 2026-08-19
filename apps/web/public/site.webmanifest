@@ -1,0 +1,9 @@
+{
+  "name": "Pannelisation Taxi",
+  "short_name": "Pannelisation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#110c1a",
+  "theme_color": "#110c1a",
+  "icons": [{ "src": "/logo.webp", "sizes": "1000x1000", "type": "image/webp" }]
+}

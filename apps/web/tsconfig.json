@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    // "bun" is here for TYPECHECKING ONLY. `paths` below points at the API's
+    // raw source, so vue-tsc typechecks files that touch Bun globals. Nothing
+    // Bun-flavoured reaches the bundle: client.ts imports AppType with
+    // `import type`, which verbatimModuleSyntax erases before Vite ever
+    // resolves it. Only "@taxipannel/api/timeline" is imported as a value, and
+    // that module is deliberately free of imports and runtime globals.
+    "types": ["vite/client", "bun"],
+    "jsx": "preserve",
+    "noEmit": true,
+    // Declared TWICE on purpose: `exports` in apps/api/package.json is what Vite
+    // and Bun resolve, `paths` here is what vue-tsc resolves. Drop either one and
+    // exactly one of the two tools breaks, silently and confusingly.
+    "paths": {
+      "@taxipannel/api": ["../api/src/index.ts"],
+      "@taxipannel/api/timeline": ["../api/src/models/timeline.model.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "server.ts"]
+}

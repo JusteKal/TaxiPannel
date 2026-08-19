@@ -1,0 +1,24 @@
+# Not mounted by docker-compose. Copy this into /etc/caddy/sites/ on a host
+# that already runs Caddy with `import /etc/caddy/sites/*.caddyfile`.
+taxipannel.example.com {
+	encode zstd gzip
+
+	# handle_path (not handle) strips the /api prefix, which is what makes the
+	# Vite dev proxy and production identical: the client only ever knows "/api".
+	# This block MUST come before the SPA handle below — otherwise /api/health
+	# reaches the SPA, returns index.html with a 200, and the client dies
+	# parsing HTML as JSON.
+	handle_path /api/* {
+		reverse_proxy 127.0.0.1:3000 {
+			# flush_interval -1 disables response buffering. Caddy auto-detects
+			# text/event-stream today, but /jobs/:id/events IS the progress bar:
+			# if a future Caddy or an intermediate proxy buffers it, the UI sits
+			# at 0 % for the whole encode and then jumps straight to done.
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8080
+	}
+}

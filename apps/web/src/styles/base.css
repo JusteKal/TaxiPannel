@@ -1,0 +1,108 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--mc-body-bg);
+  color: var(--mc-text);
+  font-family: var(--mc-font);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--mc-accent-light);
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--mc-accent-bg);
+  outline-offset: 1px;
+}
+
+/* Every label-ish element in the system: small, semibold, wide-tracked, upper. */
+.mc-label {
+  display: block;
+  color: var(--mc-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Every number. Without this, a progress percentage jitters as digits change width. */
+.mc-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-muted {
+  color: var(--mc-text-muted);
+}
+
+/* dvh and not vh: on mobile, vh includes the space the URL bar occupies, so a
+   full-height shell gets clipped. No vh fallback — dvh has been in every
+   evergreen browser since 2022. */
+.app-shell {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+.app-shell__main {
+  width: 100%;
+  max-width: var(--mc-shell-max);
+  flex: 1;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 74, 192, 0.45);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(180, 74, 192, 0.7);
+}
+
+@media (min-width: 768px) {
+  .app-shell__main {
+    padding: 40px;
+  }
+}

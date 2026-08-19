@@ -1,0 +1,16 @@
+/* layer(base) is load-bearing, not decoration.
+   Biome sorts this import to the bottom of main.ts, so without the layer these
+   primitives would win over component rules purely by emission order. Unlayered
+   rules always beat layered ones, so a component can override .mc-btn without
+   inflating its selector. */
+@import "./tokens.css" layer(base);
+@import "./base.css" layer(base);
+@import "./layout.css" layer(base);
+@import "./panel.css" layer(base);
+@import "./button.css" layer(base);
+@import "./field.css" layer(base);
+@import "./badge.css" layer(base);
+@import "./alert.css" layer(base);
+@import "./dialog.css" layer(base);
+@import "./empty.css" layer(base);
+@import "./progress.css" layer(base);

@@ -1,0 +1,28 @@
+.mc-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.mc-cluster.between {
+  justify-content: space-between;
+}
+
+.mc-cluster.end {
+  justify-content: flex-end;
+}
+
+.mc-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mc-stack.tight {
+  gap: 10px;
+}
+
+.mc-section {
+  margin-bottom: 32px;
+}

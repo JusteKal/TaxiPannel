@@ -1,0 +1,149 @@
+.mc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--mc-radius);
+  background: none;
+  color: var(--mc-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--mc-transition),
+    color var(--mc-transition),
+    border-color var(--mc-transition),
+    filter var(--mc-transition);
+}
+
+/* Touch-first, and inverted from most systems: 40px on a phone, 32px on a
+   desktop where the pointer is precise and the density matters more. */
+.mc-btn:not(.icon) {
+  height: 40px;
+}
+
+.mc-btn.primary {
+  border-color: transparent;
+  background: var(--mc-accent);
+  color: var(--mc-on-accent);
+}
+
+.mc-btn.primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.mc-btn.ghost {
+  border-color: var(--mc-border);
+  background: none;
+  color: var(--mc-text-subtle);
+  font-weight: 500;
+}
+
+.mc-btn.ghost:hover:not(:disabled) {
+  background: var(--mc-surface-hover);
+  color: var(--mc-text);
+}
+
+.mc-btn.ghost.is-active {
+  border-color: var(--mc-accent);
+  background: var(--mc-accent-bg);
+  color: var(--mc-accent-light);
+  font-weight: 600;
+}
+
+.mc-btn.danger {
+  background: var(--mc-danger-strong);
+  color: #fff;
+}
+
+.mc-btn.success {
+  background: var(--mc-success-strong);
+  color: #fff;
+}
+
+.mc-btn.danger:hover:not(:disabled),
+.mc-btn.success:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+/* Outline variants are generated, not hand-written: adding a semantic colour
+   costs one variable, not five rules. */
+.mc-btn.ghost.danger {
+  border-color: var(--mc-danger-border);
+  background: none;
+  color: var(--mc-danger);
+}
+
+.mc-btn.ghost.success {
+  border-color: color-mix(in srgb, var(--mc-success) 40%, transparent);
+  background: none;
+  color: var(--mc-success);
+}
+
+.mc-btn.ghost.warning {
+  border-color: color-mix(in srgb, var(--mc-warning) 40%, transparent);
+  background: none;
+  color: var(--mc-warning);
+}
+
+.mc-btn.ghost.danger:hover:not(:disabled) {
+  background: var(--mc-danger-bg);
+  color: var(--mc-danger);
+}
+
+.mc-btn.ghost.success:hover:not(:disabled) {
+  background: var(--mc-success-bg);
+  color: var(--mc-success);
+}
+
+.mc-btn.ghost.warning:hover:not(:disabled) {
+  background: var(--mc-warning-bg);
+  color: var(--mc-warning);
+}
+
+.mc-btn.sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.mc-btn.icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+.mc-btn.icon.sm {
+  width: 28px;
+  height: 28px;
+}
+
+.mc-btn:disabled,
+.mc-btn.disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+@media (min-width: 992px) {
+  .mc-btn:not(.icon) {
+    height: 32px;
+  }
+
+  .mc-btn.icon {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .mc-btn.icon.sm {
+    width: 24px;
+    height: 24px;
+  }
+}

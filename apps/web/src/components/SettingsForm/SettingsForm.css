@@ -1,0 +1,11 @@
+.settings__estimate {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mc-border-row);
+  color: var(--mc-text-subtle);
+  font-size: 12.5px;
+}
+
+.settings__size {
+  margin-top: 6px;
+}
