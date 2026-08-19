@@ -9,6 +9,7 @@ export type PanelErrorCode =
   | "serverBusy"
   // assets
   | "unsupportedImage"
+  | "staticImageOnly"
   | "imageTooLarge"
   | "tooManyAssets"
   | "assetNotFound"

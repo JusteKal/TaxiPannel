@@ -15,6 +15,7 @@ export const en: MessageSchema = {
     drop: "Drop to add",
     tooBig: "“{name}” is larger than {max}.",
     notAnImage: "“{name}” is not an image.",
+    noGif: "“{name}” is a GIF; only still images are accepted.",
     truncated: "“{name}” has more than {max} frames; only the first ones are used.",
     state: {
       uploading: "Uploading…",
@@ -109,6 +110,7 @@ export const en: MessageSchema = {
     rateLimited: "Too many requests. Try again in {retryAfter} s.",
     serverBusy: "The server is busy ({queued} queued). Try again shortly.",
     unsupportedImage: "Unsupported image format.",
+    staticImageOnly: "“{name}” is animated or a GIF; only still images are accepted.",
     imageTooLarge: "Image too large.",
     tooManyAssets: "Too many images in this session (max {max}).",
     assetNotFound: "Image not found. It may have expired — upload it again.",

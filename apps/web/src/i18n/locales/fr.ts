@@ -17,6 +17,7 @@ export const fr = {
     drop: "Déposez pour ajouter",
     tooBig: "« {name} » dépasse {max}.",
     notAnImage: "« {name} » n'est pas une image.",
+    noGif: "« {name} » est un GIF : seules les images fixes sont acceptées.",
     truncated: "« {name} » dépasse {max} trames : seules les premières seront utilisées.",
     state: {
       uploading: "Envoi…",
@@ -113,6 +114,8 @@ export const fr = {
     rateLimited: "Trop de requêtes. Réessayez dans {retryAfter} s.",
     serverBusy: "Le serveur est saturé ({queued} en attente). Réessayez dans un instant.",
     unsupportedImage: "Format d'image non pris en charge.",
+    staticImageOnly:
+      "« {name} » est animé ou au format GIF : seules les images fixes sont acceptées.",
     imageTooLarge: "Image trop volumineuse.",
     tooManyAssets: "Trop d'images dans cette session (maximum {max}).",
     assetNotFound: "Image introuvable. Elle a peut-être expiré — réimportez-la.",

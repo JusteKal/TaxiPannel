@@ -31,6 +31,14 @@ export async function createAsset(sessionId: string, file: File): Promise<Asset>
   const bytes = new Uint8Array(await file.arrayBuffer());
   const meta = await probe(bytes);
 
+  // Refused on the format and not only on the page count: a single-frame GIF
+  // would pass `frames > 1` and still ship an indexed 256-colour source.
+  if (meta.format === "gif" || meta.frames > 1) {
+    throw new PanelError(415, "staticImageOnly", "Only still images are accepted", {
+      name: file.name || "image",
+    });
+  }
+
   const asset: Asset = {
     id: crypto.randomUUID(),
     sessionId,

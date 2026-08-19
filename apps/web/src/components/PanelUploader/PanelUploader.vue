@@ -64,7 +64,7 @@ function onPick(e: Event) {
         :id="inputId"
         class="dropzone__input"
         type="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp,image/avif,image/tiff"
         multiple
         @change="onPick"
       />

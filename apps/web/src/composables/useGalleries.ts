@@ -47,6 +47,12 @@ export function useGalleries() {
         push("upload.notAnImage", { name: file.name }, "warning");
         continue;
       }
+      // Only the mime is checkable here; an animated WebP or APNG still gets
+      // through and is refused by the API, which reads the real page count.
+      if (file.type === "image/gif") {
+        push("upload.noGif", { name: file.name }, "warning");
+        continue;
+      }
       // Pre-checked client-side so the user gets a real message instead of a
       // bare 413 from whatever proxy is in front of the API.
       if (file.size > MAX_UPLOAD_BYTES) {
