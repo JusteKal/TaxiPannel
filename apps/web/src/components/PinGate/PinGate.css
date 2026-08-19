@@ -1,0 +1,41 @@
+.pin-gate {
+  max-width: 420px;
+  margin: 8vh auto 0;
+}
+
+.pin-gate__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--mc-accent-light);
+}
+
+.pin-gate__title {
+  margin: 0;
+  color: var(--mc-text-strong);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pin-gate__body {
+  margin: 12px 0 20px;
+  color: var(--mc-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.pin-gate__label {
+  color: var(--mc-text-muted);
+  font-size: 11px;
+}
+
+.pin-gate__form {
+  gap: 8px;
+}
+
+.pin-gate__submit {
+  margin-top: 6px;
+  height: 38px;
+}

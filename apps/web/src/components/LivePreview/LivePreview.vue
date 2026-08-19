@@ -1,20 +1,18 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { type PreviewView, usePreview } from "../../composables/usePreview";
 import { useSettings } from "../../composables/useSettings";
 import Icon from "../Icon/Icon.vue";
 
-const { t } = useI18n();
 const { timeline } = useSettings();
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 const { playing, position, view, ready, seek, toggle } = usePreview(canvas);
 
 const VIEWS: { id: PreviewView; label: string }[] = [
-  { id: "atlas", label: "preview.viewAtlas" },
-  { id: "right", label: "panel.right" },
-  { id: "left", label: "panel.left" },
+  { id: "atlas", label: "Atlas" },
+  { id: "right", label: "Panneau droite" },
+  { id: "left", label: "Panneau gauche" },
 ];
 
 function onScrub(e: Event) {
@@ -25,7 +23,7 @@ function onScrub(e: Event) {
 <template>
   <section class="mc-panel preview">
     <header class="mc-card-header">
-      <span><Icon name="film" /> {{ t("preview.title") }}</span>
+      <span><Icon name="film" /> Aperçu</span>
       <div class="mc-cluster preview__views">
         <button
           v-for="v in VIEWS"
@@ -35,7 +33,7 @@ function onScrub(e: Event) {
           :class="{ 'is-active': view === v.id }"
           @click="view = v.id"
         >
-          {{ t(v.label) }}
+          {{ v.label }}
         </button>
       </div>
     </header>
@@ -43,10 +41,10 @@ function onScrub(e: Event) {
     <div class="preview__stage">
       <!-- v-show, not v-if: the canvas element must stay mounted or the rAF
            loop in usePreview would draw into a detached node. -->
-      <canvas v-show="ready" ref="canvas" class="preview__canvas" :aria-label="t('preview.alt')" />
+      <canvas v-show="ready" ref="canvas" class="preview__canvas" aria-label="Aperçu animé de l'atlas 2×2" />
       <div v-if="!ready" class="mc-empty compact">
         <Icon class="mc-empty__icon" name="film" :size="24" />
-        <p class="mc-empty__text">{{ t("preview.empty") }}</p>
+        <p class="mc-empty__text">Ajoutez des images dans les deux panneaux pour lancer l'aperçu.</p>
       </div>
     </div>
 
@@ -54,7 +52,7 @@ function onScrub(e: Event) {
       <button
         type="button"
         class="mc-btn icon"
-        :aria-label="t(playing ? 'preview.pause' : 'preview.play')"
+        :aria-label="playing ? 'Pause' : 'Lecture'"
         @click="toggle"
       >
         <Icon :name="playing ? 'pause' : 'play'" :size="12" />
@@ -66,7 +64,7 @@ function onScrub(e: Event) {
         step="0.01"
         :max="timeline.totalLoopSeconds"
         :value="position"
-        :aria-label="t('preview.scrub')"
+        aria-label="Position dans la boucle"
         @pointerdown="playing = false"
         @input="onScrub"
       />
@@ -76,7 +74,7 @@ function onScrub(e: Event) {
     </div>
 
     <p v-if="ready && view === 'atlas'" class="preview__hint mc-muted">
-      {{ t("preview.hintAtlas") }}
+      Chaque panneau apparaît deux fois, en diagonale — c'est la disposition attendue par le jeu.
     </p>
   </section>
 </template>

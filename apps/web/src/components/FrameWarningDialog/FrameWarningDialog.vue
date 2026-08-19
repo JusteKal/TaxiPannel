@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
 
 defineProps<{ frames: number; max: number }>();
 const emit = defineEmits<{ confirm: []; cancel: [] }>();
 
-const { t } = useI18n();
 const confirmButton = ref<HTMLButtonElement | null>(null);
 
 // Replaces confirm(). Unlike confirm() this does not block the thread, so the
@@ -24,17 +22,20 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKey));
 <template>
   <div class="mc-overlay" role="dialog" aria-modal="true" @click.self="emit('cancel')">
     <div class="mc-dialog">
-      <p class="mc-dialog__title">{{ t("dialog.framesTitle") }}</p>
+      <p class="mc-dialog__title">Beaucoup de trames à générer</p>
       <div class="mc-dialog__body">
-        <p>{{ t("dialog.framesBody", { frames, max }) }}</p>
-        <p class="frame-dialog__tip">{{ t("dialog.framesTip") }}</p>
+        <p>
+          Cette configuration produit {{ frames }} trames (recommandé : {{ max }} au maximum). La
+          génération sera longue et le fichier lourd.
+        </p>
+        <p class="frame-dialog__tip">
+          Astuce : mettez le même nombre d'images des deux côtés pour raccourcir fortement la boucle.
+        </p>
       </div>
       <div class="mc-dialog__footer">
-        <button type="button" class="mc-btn ghost" @click="emit('cancel')">
-          {{ t("dialog.cancel") }}
-        </button>
+        <button type="button" class="mc-btn ghost" @click="emit('cancel')">Annuler</button>
         <button ref="confirmButton" type="button" class="mc-btn primary" @click="emit('confirm')">
-          {{ t("dialog.framesConfirm") }}
+          Générer quand même
         </button>
       </div>
     </div>

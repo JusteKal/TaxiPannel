@@ -56,13 +56,36 @@ automatiquement pour tenir sous 5 Mo : qualité 50, 10 img/s, seuil de similarit
 Hors périmètre volontairement : pas de comptes, pas de base de données, pas
 d'historique. Tout l'état vit en mémoire et expire.
 
+### Accès par code PIN
+
+`ACCESS_PIN` ferme la plateforme. **Vide, l'outil est ouvert à tout le monde** —
+c'est le défaut, pour que `bun run dev` marche sans configuration. Renseigné :
+
+1. Le SPA demande `GET /auth` au démarrage et n'affiche rien avant la réponse.
+2. Sans jeton valide il affiche l'écran de saisie et rien d'autre.
+3. `POST /auth { pin }` renvoie `{ token, expiresAt }`, gardé en `localStorage`
+   et envoyé en `x-access-token` sur chaque appel.
+4. **Toutes** les routes sauf `/health` et `/auth` répondent `401 pinRequired`
+   sans jeton valide. L'écran n'est que de l'habillage ; la porte est là.
+
+Un seul PIN partagé, pas de comptes : c'est un rideau, pas une authentification.
+Il tient à ce que le PIN ne fuite pas, et à `PIN_ATTEMPTS_PER_10MIN` (10 essais
+par client, succès compris) pour freiner un devineur. Ce compteur est **par
+clé client** : un attaquant réparti sur plusieurs IP le contourne, donc prendre
+une phrase et pas quatre chiffres. Le PIN circule en clair dans le corps de la
+requête — servir derrière HTTPS.
+
+Les jetons vivent dans une `Map` en mémoire, comme le reste : un redémarrage de
+l'API les invalide tous et chacun ressaisit le PIN une fois.
+
 ## Stack
 
 - **Monorepo** — bun workspaces, deux paquets, aucun outil d'orchestration.
 - **`apps/api`** — Bun + [Hono](https://hono.dev) 4 + Zod. Aucune étape de build :
   le paquet exporte du `.ts` brut, Bun l'exécute directement.
-- **`apps/web`** — Vue 3.5 (`<script setup>`) + Vite 6 + vue-router + vue-i18n.
-  Pas de Pinia, pas de Tailwind, pas de bibliothèque de composants.
+- **`apps/web`** — Vue 3.5 (`<script setup>`) + Vite 6 + vue-router. Pas de
+  Pinia, pas de Tailwind, pas de bibliothèque de composants, pas d'i18n :
+  l'outil est en français et seulement en français.
 - **Typage traversant** — `hc<AppType>` infère chemins, corps et réponses depuis
   le type de l'app Hono. Aucun codegen, aucun schéma dupliqué.
 - **Encodage** — `sharp` pour décoder/redimensionner (GIF animés compris),
@@ -100,7 +123,7 @@ apps/
         ├── composables/                 stores singleton au scope module
         ├── components/<Nom>/<Nom>.vue   un dossier par composant, CSS colocalisé
         ├── views/BuilderView.vue        la page unique
-        ├── i18n/                        fr = référence, en = typé sur elle
+        ├── utils/errors.ts              PanelErrorCode -> message français
         └── styles/                      système mc-*, importé en layer(base)
 ```
 
@@ -111,9 +134,16 @@ apps/
 sudo dnf install ffmpeg-free gifsicle     # Fedora
 sudo apt install ffmpeg gifsicle          # Debian / Ubuntu
 
+cp .env.example .env  # ACCESS_PIN vide = plateforme ouverte
 bun install
-bun run dev          # API sur :3000, front sur :5173
+bun run dev           # API sur :3000, front sur :5173
 ```
+
+Le `.env` **de la racine** est le seul. Les scripts de `apps/api` le chargent
+explicitement (`bun --env-file=../../.env`) : sans ça, bun ne lit que le `.env`
+du dossier courant, c'est-à-dire `apps/api/.env`, et toute la configuration
+posée à la racine serait ignorée en silence. Au démarrage l'API affiche si la
+porte PIN est ouverte ou fermée.
 
 Le front n'appelle jamais qu'une base relative `/api`. En dev le proxy Vite la
 réécrit vers `localhost:3000`, en prod Caddy fait exactement la même chose avec
@@ -124,11 +154,14 @@ automatisé. Il n'y a **pas** de suite de tests ni de test runner.
 
 ## API
 
-Toutes les routes exigent l'en-tête `x-session-id` sauf `/health`.
+Toutes les routes exigent l'en-tête `x-session-id` sauf `/health` et `/auth`, et
+— quand `ACCESS_PIN` est renseigné — l'en-tête `x-access-token` sauf ces deux-là.
 
 | Méthode | Chemin | Corps | Succès | Erreurs |
 |---|---|---|---|---|
 | `GET` | `/health` | — | `200 { ok, ffmpeg, gifsicle, assets, total, running, queued }` (503 si un encodeur manque) | — |
+| `GET` | `/auth` | — | `200 { required, authenticated }` | — |
+| `POST` | `/auth` | `{ pin }` | `200 { token, expiresAt }` | `invalidPin`, `invalidRequest`, `rateLimited` |
 | `POST` | `/assets` | `multipart/form-data`, champ `file` | `201 AssetView` | `unsupportedImage`, `imageTooLarge`, `tooManyAssets`, `payloadTooLarge`, `rateLimited` |
 | `DELETE` | `/assets/:id` | — | `204` | `assetNotFound` |
 | `POST` | `/jobs` | `{ right[], left[], settings, acknowledgeFrames? }` | `202 JobView` | `invalidRequest`, `assetNotFound`, `framesExceeded`, `framesTooMany`, `budgetExceeded`, `serverBusy`, `encoderMissing` |
@@ -139,9 +172,9 @@ Toutes les routes exigent l'en-tête `x-session-id` sauf `/health`.
 
 ### Erreurs
 
-L'API **ne traduit jamais**. Elle renvoie un code stable et des paramètres ; le
-client résout `errors.<code>` dans ses propres messages, ce qui fait que les
-erreurs affichées suivent un changement de langue en cours de session.
+L'API **ne renvoie jamais de prose destinée à l'écran**. Elle renvoie un code
+stable et des paramètres ; le texte vit dans `apps/web/src/utils/errors.ts`, et
+le champ `error` n'est qu'un pense-bête anglais pour qui lit le réseau.
 
 ```json
 {

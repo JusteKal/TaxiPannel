@@ -5,9 +5,7 @@ export type AlertLevel = "danger" | "warning" | "success" | "info";
 export interface Alert {
   id: number;
   level: AlertLevel;
-  /** An i18n key, resolved at render time so a language switch re-renders it. */
-  key: string;
-  params?: Record<string, unknown>;
+  message: string;
 }
 
 const AUTO_DISMISS_MS = 8000;
@@ -17,11 +15,11 @@ const alerts = ref<Alert[]>([]);
 let nextId = 1;
 
 export function useAlerts() {
-  function push(key: string, params?: Record<string, unknown>, level: AlertLevel = "danger"): void {
+  function push(message: string, level: AlertLevel = "danger"): void {
     const id = nextId++;
     // Same message twice in a row is noise, not information.
-    if (alerts.value.some((a) => a.key === key && a.level === level)) return;
-    alerts.value = [...alerts.value, { id, level, key, params }];
+    if (alerts.value.some((a) => a.message === message && a.level === level)) return;
+    alerts.value = [...alerts.value, { id, level, message }];
     const timer = setTimeout(() => dismiss(id), AUTO_DISMISS_MS);
     timer.unref?.();
   }

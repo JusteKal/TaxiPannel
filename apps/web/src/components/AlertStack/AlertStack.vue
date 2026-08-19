@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
 import { useAlerts } from "../../composables/useAlerts";
 import Icon from "../Icon/Icon.vue";
 
-// Replaces every alert() in the original: non-blocking, dismissible, and the
-// message re-renders on a language switch because only the key is stored.
-const { t } = useI18n();
+// Replaces every alert() in the original: non-blocking and dismissible.
 const { alerts, dismiss } = useAlerts();
 </script>
 
@@ -18,13 +15,8 @@ const { alerts, dismiss } = useAlerts();
       :class="`mc-alert--${alert.level}`"
     >
       <Icon name="warning" :size="14" />
-      <span class="mc-alert__body">{{ t(alert.key, alert.params ?? {}) }}</span>
-      <button
-        type="button"
-        class="mc-btn ghost icon sm"
-        :aria-label="t('dialog.cancel')"
-        @click="dismiss(alert.id)"
-      >
+      <span class="mc-alert__body">{{ alert.message }}</span>
+      <button type="button" class="mc-btn ghost icon sm" aria-label="Annuler" @click="dismiss(alert.id)">
         <Icon name="xmark" :size="11" />
       </button>
     </div>

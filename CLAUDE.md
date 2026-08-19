@@ -150,15 +150,15 @@ c'était le troisième site de fuite de la version d'origine.
 Le point de sortie unique est le handler `pagehide` de `App.vue` (`pagehide` et
 pas `beforeunload` : ce dernier ne se déclenche jamais sur Safari mobile).
 
-## i18n : le français est la référence
+## Une seule langue, en dur
 
-Incognito fait l'inverse. Ici `fr.ts` exporte `MessageSchema = typeof fr` et
-`en.ts` est typé dessus, donc une clé ajoutée en français et oubliée en anglais
-fait **échouer `bun run typecheck`**. Pas de `as const` sur `fr` : le schéma doit
-contraindre la forme, pas les chaînes.
+Il n'y a pas d'i18n. Les libellés sont écrits en français dans les templates,
+et les messages d'erreur — les seuls dont le texte dépend d'une donnée serveur —
+vivent tous dans `utils/errors.ts`, indexés par `PanelErrorCode`.
 
-`tk(key, named)` est l'échappatoire pour les composables, qui n'ont pas de
-contexte `useI18n()`.
+Ce fichier est exhaustif par construction : `Record<ErrorCode, …>` fait échouer
+`bun run typecheck` dès qu'un code est ajouté côté API sans message ici. C'est
+ce qui remplace le contrôle que `MessageSchema` exerçait sur les deux locales.
 
 ## Un seul replica
 
@@ -166,6 +166,31 @@ Assets, jobs et résultats vivent dans des `Map` en mémoire. Deux replicas
 distribueraient des identifiants que l'autre n'a jamais vus. Les janitors
 (`setInterval` toutes les 5 min, avec `timer.unref?.()` pour ne pas retenir le
 processus) balaient sur TTL.
+
+## La porte PIN prend l'exact contre-pied de `requireSessionId`
+
+`requireSessionId` est appelé **dans** les handlers, parce qu'un middleware qui
+enrichit le contexte casse l'inférence `hc`. `accessGuard()` est au contraire
+monté en `.use("*")` : il ne pose rien sur le contexte, donc l'inférence est
+intacte, et une route ajoutée demain est protégée sans que personne y pense.
+L'oubli inverse — une route sans `requireSessionId` — se voit tout de suite ;
+une route sans garde d'accès ne se voit jamais.
+
+`ACCESS_PIN` vide veut dire **porte ouverte**, pas erreur de démarrage : un
+`bun run dev` sans `.env` doit rester utilisable. C'est le déploiement qui
+ferme.
+
+Côté SPA, `PinGate` n'est que de l'habillage. Ce qui ferme vraiment, c'est le
+401 `pinRequired` sur toute route non publique. D'où le fait que `readError()`
+appelle `lock()` : c'est le seul point où un jeton mort, périmé ou révoqué par
+un redémarrage de l'API fait revenir l'écran, quel que soit l'appel qui l'a
+découvert.
+
+`useAccess` retient `checked` avant de laisser quoi que ce soit s'afficher —
+un flash du builder pour quelqu'un qui n'a pas le PIN est précisément ce que la
+porte doit empêcher. Et contrairement à `useSession` (sessionStorage), le jeton
+va en `localStorage` : le TTL serveur borne déjà sa durée de vie, et retaper le
+PIN à chaque onglet ne protège rien.
 
 ## Conventions
 
@@ -192,6 +217,14 @@ media queries vivent en bas du fichier qui possède le sélecteur, jamais dans u
 bloc commun. Jamais de `scoped`, toujours `<style src="./Nom.css">`.
 
 ## Pièges de l'environnement
+
+Bun ne lit que le `.env` du **dossier courant**. `bun run --filter
+'@taxipannel/api' dev` s'exécute avec `apps/api` pour cwd, donc le `.env` de la
+racine — celui que `.env.example` décrit et que docker compose utilise — serait
+purement et simplement ignoré. D'où le `--env-file=../../.env` dans les scripts
+de `apps/api`. Le symptôme est muet : la config prend ses valeurs par défaut,
+et pour `ACCESS_PIN` la valeur par défaut veut dire « porte ouverte ». C'est ce
+que la ligne de log au démarrage rend visible.
 
 Le linker isolé de bun place les dépendances de workspace dans
 `apps/<pkg>/node_modules`, pas à la racine. Un `bun -e "import('sharp')"` lancé

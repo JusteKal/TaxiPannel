@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
 import type { GalleryItem } from "../../composables/useGalleries";
 import GalleryThumb from "../GalleryThumb/GalleryThumb.vue";
 import Icon from "../Icon/Icon.vue";
 
 defineProps<{ items: readonly GalleryItem[] }>();
 defineEmits<{ move: [index: number, delta: number]; remove: [index: number] }>();
-
-const { t } = useI18n();
 </script>
 
 <template>
   <div v-if="items.length === 0" class="mc-empty compact">
     <Icon class="mc-empty__icon" name="image" :size="24" />
-    <p class="mc-empty__title">{{ t("gallery.emptyTitle") }}</p>
-    <p class="mc-empty__text">{{ t("gallery.emptyText") }}</p>
+    <p class="mc-empty__title">Aucune image</p>
+    <p class="mc-empty__text">Ajoutez au moins une image pour ce panneau.</p>
   </div>
   <ul v-else class="gallery">
     <GalleryThumb

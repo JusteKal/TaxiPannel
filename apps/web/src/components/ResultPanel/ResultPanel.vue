@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { useEncodeJob } from "../../composables/useEncodeJob";
 import { prettyBytes } from "../../utils/format";
 import Icon from "../Icon/Icon.vue";
 
-const { t } = useI18n();
 const { job, running, resultUrl, cancel } = useEncodeJob();
+
+const PHASE_LABEL: Record<string, string> = {
+  queued: "En file d'attente…",
+  decoding: "Préparation des images…",
+  palette: "Analyse des couleurs…",
+  encoding: "Encodage du GIF…",
+  optimizing: "Optimisation…",
+  shrinking: "Réduction sous le budget…",
+  settled: "Terminé",
+};
 
 const percent = computed(() => Math.round((job.value?.progress ?? 0) * 100));
 </script>
@@ -14,27 +22,27 @@ const percent = computed(() => Math.round((job.value?.progress ?? 0) * 100));
 <template>
   <section class="mc-panel result">
     <header class="mc-card-header">
-      <span><Icon name="image" /> {{ t("result.title") }}</span>
+      <span><Icon name="image" /> Résultat</span>
       <span v-if="job?.bytes" class="mc-cluster result__size">
         <span class="mc-badge accent mc-num">{{ prettyBytes(job.bytes) }}</span>
         <span class="mc-muted mc-num result__budget">
-          {{ t("result.budget", { budget: prettyBytes(job.budgetBytes) }) }}
+          budget {{ prettyBytes(job.budgetBytes) }}
         </span>
       </span>
     </header>
 
     <div v-if="!job" class="mc-empty compact">
       <Icon class="mc-empty__icon" name="image" :size="24" />
-      <p class="mc-empty__text">{{ t("result.empty") }}</p>
+      <p class="mc-empty__text">Aucun résultat pour le moment.</p>
     </div>
 
     <template v-else-if="running">
       <div class="mc-storage-track">
         <div class="mc-storage-fill" :style="{ width: `${percent}%` }" />
       </div>
-      <p class="result__status mc-num">{{ t(`result.phase.${job.phase}`) }} — {{ percent }} %</p>
+      <p class="result__status mc-num">{{ PHASE_LABEL[job.phase] }} — {{ percent }} %</p>
       <button type="button" class="mc-btn ghost danger sm" @click="cancel">
-        {{ t("result.cancel") }}
+        Annuler
       </button>
     </template>
 
@@ -44,33 +52,28 @@ const percent = computed(() => Math.round((job.value?.progress ?? 0) * 100));
       <p v-if="job.degradation" class="mc-alert mc-alert--warning result__degraded">
         <Icon name="warning" :size="14" />
         <span class="mc-alert__body">
-          {{
-            t("result.degraded", {
-              budget: prettyBytes(job.budgetBytes),
-              quality: job.degradation.gifQuality,
-              fps: job.degradation.fps,
-              skip: job.degradation.skipSimilarity,
-            })
-          }}
+          Réduit automatiquement pour tenir sous {{ prettyBytes(job.budgetBytes) }} : qualité
+          {{ job.degradation.gifQuality }}, {{ job.degradation.fps }} img/s, seuil de similarité
+          {{ job.degradation.skipSimilarity }} %.
         </span>
       </p>
-      <img class="result__image" :src="resultUrl" :alt="t('result.alt')" />
+      <img class="result__image" :src="resultUrl" alt="Animation pannelisée" />
       <div class="mc-cluster between result__footer">
         <span class="mc-label mc-num">
-          {{ t("result.frames", { kept: job.keptFrames ?? 0, total: job.totalFrames }) }}
+          {{ job.keptFrames ?? 0 }} trames sur {{ job.totalFrames }}
           · {{ job.width }}×{{ job.height }}
         </span>
         <!-- Reuses the SAME object URL as the <img> above. The original minted a
              third one here and revoked none of them. -->
         <a class="mc-btn primary" :href="resultUrl" download="pannelisation.gif">
-          <Icon name="download" :size="12" /> {{ t("result.download") }}
+          <Icon name="download" :size="12" /> Télécharger
         </a>
       </div>
     </template>
 
     <div v-else class="mc-empty compact">
       <Icon class="mc-empty__icon" name="warning" :size="24" />
-      <p class="mc-empty__text">{{ t(`result.phase.${job.phase}`) }}</p>
+      <p class="mc-empty__text">{{ PHASE_LABEL[job.phase] }}</p>
     </div>
   </section>
 </template>

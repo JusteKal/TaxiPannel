@@ -1,6 +1,7 @@
 import { type AnimationTiming, makeTiming } from "@taxipannel/api/timeline";
 import { markRaw, shallowRef } from "vue";
 import { ApiError, deleteAsset, uploadAsset } from "../api/client";
+import { errorMessage } from "../utils/errors";
 import { prettyBytes } from "../utils/format";
 import { decodeSource, MAX_SOURCE_FRAMES } from "../utils/gif";
 import { useAlerts } from "./useAlerts";
@@ -44,19 +45,19 @@ export function useGalleries() {
     if (!files) return;
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/")) {
-        push("upload.notAnImage", { name: file.name }, "warning");
+        push(`« ${file.name} » n'est pas une image.`, "warning");
         continue;
       }
       // Only the mime is checkable here; an animated WebP or APNG still gets
       // through and is refused by the API, which reads the real page count.
       if (file.type === "image/gif") {
-        push("upload.noGif", { name: file.name }, "warning");
+        push(`« ${file.name} » est un GIF : seules les images fixes sont acceptées.`, "warning");
         continue;
       }
       // Pre-checked client-side so the user gets a real message instead of a
       // bare 413 from whatever proxy is in front of the API.
       if (file.size > MAX_UPLOAD_BYTES) {
-        push("upload.tooBig", { name: file.name, max: prettyBytes(MAX_UPLOAD_BYTES) }, "warning");
+        push(`« ${file.name} » dépasse ${prettyBytes(MAX_UPLOAD_BYTES)}.`, "warning");
         continue;
       }
       await addOne(side, file);
@@ -70,12 +71,15 @@ export function useGalleries() {
       // race. This alone deletes two of the old leaks.
       decoded = await decodeSource(file);
     } catch {
-      push("upload.notAnImage", { name: file.name }, "warning");
+      push(`« ${file.name} » n'est pas une image.`, "warning");
       return;
     }
 
     if (decoded.truncated) {
-      push("upload.truncated", { name: file.name, max: MAX_SOURCE_FRAMES }, "warning");
+      push(
+        `« ${file.name} » dépasse ${MAX_SOURCE_FRAMES} trames : seules les premières seront utilisées.`,
+        "warning",
+      );
     }
 
     const item: GalleryItem = {
@@ -96,10 +100,7 @@ export function useGalleries() {
       patch(side, item.id, { assetId: asset.id, state: "ready" });
     } catch (err) {
       patch(side, item.id, { state: "failed" });
-      push(
-        err instanceof ApiError ? `errors.${err.code}` : "errors.network",
-        err instanceof ApiError ? err.params : undefined,
-      );
+      push(err instanceof ApiError ? errorMessage(err.code, err.params) : errorMessage("network"));
     }
   }
 

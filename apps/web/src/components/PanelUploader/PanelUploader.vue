@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { type PanelSide, useGalleries } from "../../composables/useGalleries";
 import Icon from "../Icon/Icon.vue";
 import ImageGallery from "../ImageGallery/ImageGallery.vue";
 
 const props = defineProps<{ side: PanelSide }>();
 
-const { t } = useI18n();
 const { add, move, remove, bucket } = useGalleries();
+
+const title = computed(() => (props.side === "right" ? "Panneau droite" : "Panneau gauche"));
 
 const items = computed(() => bucket(props.side).value);
 const inputId = computed(() => `upload-${props.side}`);
@@ -45,7 +45,7 @@ function onPick(e: Event) {
 <template>
   <section class="mc-panel uploader">
     <header class="mc-card-header">
-      <span><Icon name="image" /> {{ t(`panel.${side}`) }}</span>
+      <span><Icon name="image" /> {{ title }}</span>
       <span class="mc-badge neutral mc-num">{{ items.length }}</span>
     </header>
 
@@ -59,7 +59,7 @@ function onPick(e: Event) {
       @drop="onDrop"
     >
       <Icon name="upload" :size="18" />
-      <span>{{ over ? t("upload.drop") : t("upload.hint") }}</span>
+      <span>{{ over ? "Déposez pour ajouter" : "Glissez vos images ici ou cliquez pour parcourir" }}</span>
       <input
         :id="inputId"
         class="dropzone__input"

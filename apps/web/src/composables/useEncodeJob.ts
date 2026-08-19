@@ -9,6 +9,7 @@ import {
   type JobView,
   streamJob,
 } from "../api/client";
+import { errorMessage } from "../utils/errors";
 import { useAlerts } from "./useAlerts";
 import { readyAssetIds, useGalleries } from "./useGalleries";
 import { useSettings } from "./useSettings";
@@ -39,8 +40,7 @@ export function useEncodeJob() {
   const running = computed(() => job.value?.status === "queued" || job.value?.status === "running");
 
   function report(err: unknown): void {
-    if (err instanceof ApiError) push(`errors.${err.code}`, err.params);
-    else push("errors.network");
+    push(err instanceof ApiError ? errorMessage(err.code, err.params) : errorMessage("network"));
   }
 
   async function start(acknowledgeFrames = false): Promise<void> {
@@ -49,7 +49,7 @@ export function useEncodeJob() {
     const rightIds = readyAssetIds(right.value);
     const leftIds = readyAssetIds(left.value);
     if (rightIds.length === 0 || leftIds.length === 0) {
-      push("errors.emptyPanel", undefined, "warning");
+      push(errorMessage("emptyPanel"), "warning");
       return;
     }
 
@@ -117,7 +117,7 @@ export function useEncodeJob() {
         report(err);
       }
     } else if (final.status === "failed" && final.error) {
-      push(`errors.${final.error.code}`, final.error.params);
+      push(errorMessage(final.error.code, final.error.params));
     }
   }
 

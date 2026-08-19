@@ -8,8 +8,8 @@
     "./timeline": "./src/models/timeline.model.ts"
   },
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
-    "start": "bun run src/index.ts",
+    "dev": "bun --env-file=../../.env run --hot src/index.ts",
+    "start": "bun --env-file=../../.env run src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

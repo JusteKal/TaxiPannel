@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { ACCESS_TOKEN_HEADER, accessGuard } from "./middleware/access";
 import { rateLimit } from "./middleware/rate-limit";
 import { SESSION_ID_HEADER } from "./middleware/session";
 import { assetCount } from "./models/asset.model";
@@ -7,6 +8,7 @@ import { checkEncoders } from "./models/encoder.model";
 import { PanelError } from "./models/errors";
 import { jobStats } from "./models/job.model";
 import { assetRoutes } from "./routes/asset.routes";
+import { authRoutes } from "./routes/auth.routes";
 import { jobRoutes } from "./routes/job.routes";
 
 // Empty by default: in every supported deployment the SPA and the API are
@@ -23,18 +25,20 @@ const app = new Hono()
     "*",
     cors({
       origin: CORS_ORIGIN,
-      allowHeaders: ["Content-Type", SESSION_ID_HEADER],
+      allowHeaders: ["Content-Type", SESSION_ID_HEADER, ACCESS_TOKEN_HEADER],
       allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
       exposeHeaders: ["Retry-After", "Content-Disposition"],
     }),
   )
   .use("*", rateLimit({ limit: RATE_LIMIT, windowMs: 60_000 }))
+  .use("*", accessGuard())
   .get("/health", async (c) => {
     const encoders = await checkEncoders();
     const stats = jobStats();
     const ok = encoders.ffmpeg && encoders.gifsicle;
     return c.json({ ok, ...encoders, assets: assetCount(), ...stats }, ok ? 200 : 503);
   })
+  .route("/", authRoutes)
   .route("/", assetRoutes)
   .route("/", jobRoutes)
   .onError((err, c) => {

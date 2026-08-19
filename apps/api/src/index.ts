@@ -1,5 +1,6 @@
 import { app } from "./app";
 import { startRateLimitJanitor } from "./middleware/rate-limit";
+import { gateEnabled, startAccessJanitor } from "./models/access.model";
 import { startAssetJanitor } from "./models/asset.model";
 import { checkEncoders, ensureTmpDir } from "./models/encoder.model";
 import { startJobJanitor } from "./models/job.model";
@@ -13,12 +14,22 @@ export type { CreateJobInput } from "./models/job.model";
 export type { Settings, Timeline } from "./models/timeline.model";
 export type { JobPhase, JobStatus } from "./models/types";
 export type { AssetView } from "./views/asset.view";
+export type { AccessView, GrantView } from "./views/auth.view";
 export type { JobView } from "./views/job.view";
 
 await ensureTmpDir();
+startAccessJanitor();
 startAssetJanitor();
 startJobJanitor();
 startRateLimitJanitor();
+
+// An unset ACCESS_PIN is a valid configuration, and an invisible one: without
+// this line the only way to notice the platform is open is to try it.
+console.log(
+  gateEnabled()
+    ? "Access gate ON (ACCESS_PIN set)."
+    : "Access gate OFF: ACCESS_PIN is unset, anyone can use this instance.",
+);
 
 const encoders = await checkEncoders();
 if (!encoders.ffmpeg || !encoders.gifsicle) {

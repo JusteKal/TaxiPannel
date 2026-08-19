@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-// Ten inlined Font Awesome 6 Free (solid) paths. Pulling the package for ten
-// glyphs would ship a ~150 KB woff2 for ~2 KB of actual use.
+// Thirteen inlined Font Awesome 6 Free (solid) paths. Pulling the package for
+// thirteen glyphs would ship a ~150 KB woff2 for ~2 KB of actual use.
 // Font Awesome Free is CC BY 4.0 — attribution is in the README.
 const PATHS: Record<string, { box: string; d: string }> = {
   upload: {
@@ -44,6 +44,10 @@ const PATHS: Record<string, { box: string; d: string }> = {
   xmark: {
     box: "0 0 384 512",
     d: "M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z",
+  },
+  lock: {
+    box: "0 0 448 512",
+    d: "M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z",
   },
   wand: {
     box: "0 0 512 512",

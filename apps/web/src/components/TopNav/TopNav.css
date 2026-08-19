@@ -55,12 +55,6 @@
   text-transform: uppercase;
 }
 
-.mc-topnav__actions {
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-}
-
 /* Below 576px the tagline is the first thing worth losing. */
 @media (max-width: 575.98px) {
   .mc-topnav__tagline {

@@ -1,10 +1,12 @@
 import type { AppType, PanelErrorCode, PanelErrorParams } from "@taxipannel/api";
 import { hc } from "hono/client";
+import { accessToken, useAccess } from "../composables/useAccess";
 import { useSession } from "../composables/useSession";
 
 // Components import these from here, never from "@taxipannel/api" — one seam to
 // change if the package is ever renamed or split.
 export type {
+  AccessView,
   AssetView,
   JobPhase,
   JobStatus,
@@ -19,9 +21,13 @@ export type {
 const baseUrl = import.meta.env.VITE_API_URL ?? "/api";
 
 export const SESSION_HEADER = "x-session-id";
+export const ACCESS_HEADER = "x-access-token";
 
 function authHeaders(): Record<string, string> {
-  return { [SESSION_HEADER]: useSession().sessionId };
+  const headers: Record<string, string> = { [SESSION_HEADER]: useSession().sessionId };
+  const token = accessToken();
+  if (token) headers[ACCESS_HEADER] = token;
+  return headers;
 }
 
 export const client = hc<AppType>(baseUrl, { headers: () => authHeaders() });
@@ -43,10 +49,27 @@ async function readError(res: Response): Promise<ApiError> {
       code?: PanelErrorCode;
       params?: PanelErrorParams;
     };
-    return new ApiError(body.code ?? "unknown", res.status, body.params);
+    const code = body.code ?? "unknown";
+    // Any route can answer this, and when one does the stored grant is dead.
+    // Re-locking here is what makes the gate come back mid-session, wherever
+    // the call was made from.
+    if (code === "pinRequired") useAccess().lock();
+    return new ApiError(code, res.status, body.params);
   } catch {
     return new ApiError("unknown", res.status);
   }
+}
+
+export async function accessState() {
+  const res = await client.auth.$get();
+  if (!res.ok) throw await readError(res);
+  return res.json();
+}
+
+export async function unlock(pin: string) {
+  const res = await client.auth.$post({ json: { pin } });
+  if (!res.ok) throw await readError(res);
+  return res.json();
 }
 
 export async function uploadAsset(file: File, signal?: AbortSignal) {

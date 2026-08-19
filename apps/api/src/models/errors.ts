@@ -4,6 +4,8 @@ export type PanelErrorCode =
   // transport / session
   | "missingSessionId"
   | "invalidRequest"
+  | "pinRequired"
+  | "invalidPin"
   | "payloadTooLarge"
   | "rateLimited"
   | "serverBusy"
@@ -38,10 +40,9 @@ export interface PanelErrorBody {
 }
 
 /**
- * The API never translates. `error` is an English fallback for anyone reading
- * the wire directly; the client resolves `errors.<code>` against its own
- * messages with `params` as interpolations, so a mid-session language switch
- * re-renders every visible error.
+ * The API never sends prose meant for the screen. `error` is for whoever is
+ * reading the wire; the client owns the wording, keyed by `code` with `params`
+ * as interpolations.
  */
 export class PanelError extends Error {
   constructor(

@@ -1,9 +1,6 @@
-import { currentLocale } from "../i18n";
-
 /**
- * Intl and not a hardcoded suffix: "Ko" is wrong in English and "KB" is wrong
- * in French. Reading currentLocale() here also registers a reactive dependency
- * on the locale ref, so a language switch re-renders the formatted value.
+ * Intl and not a hardcoded suffix: it puts the space and the unit where French
+ * wants them ("56,2 ko"), and gets the decimal comma right for free.
  */
 export function prettyBytes(bytes: number): string {
   const [value, unit] =
@@ -13,7 +10,7 @@ export function prettyBytes(bytes: number): string {
         ? ([bytes / 1024, "kilobyte"] as const)
         : ([bytes / (1024 * 1024), "megabyte"] as const);
 
-  return new Intl.NumberFormat(currentLocale(), {
+  return new Intl.NumberFormat("fr-FR", {
     style: "unit",
     unit,
     unitDisplay: "short",
